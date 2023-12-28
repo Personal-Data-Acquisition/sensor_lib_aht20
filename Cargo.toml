@@ -1,8 +1,16 @@
 [package]
 name = "aht20"
 version = "0.1.0"
+authors = ["Jake Goodwin <jakegoodwin@gorge.works>"]
 edition = "2021"
+categories = ["embedded", "hardware-support", "no-std", "embedded-hal"]
+description = "A driver for the AHT20 sensor modules."
+readme = "README.md"
+keywords = ["embedded-hal-driver", "sensor", "temprature", "humidity", "aht20"]
+license = "MIT"
+#repository = "https://"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+embedded-hal = "0.2.7"
