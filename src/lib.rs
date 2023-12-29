@@ -251,10 +251,21 @@ mod sensor_test {
     fn read_sensor()
     {
         
-        let sensor_reading = vec![0x0, 0x0];
+        //prepare 7-Bytes of data.
+        let sensor_reading = vec![0u8; 7];
         
+        let busy_status = vec![
+            (StatusBitMasks::Busy as u8) & 0x0
+        ];
+        let not_busy_status = vec![
+            !(StatusBitMasks::Busy as u8) & 0x0
+        ];
+
         let expected = [
+            I2cTransaction::write(SENSOR_ADDR, vec!(0xAC)),
             I2cTransaction::write(SENSOR_ADDR, vec!(0x71)),
+            I2cTransaction::read(SENSOR_ADDR, busy_status),
+            I2cTransaction::read(SENSOR_ADDR, not_busy_status),
             I2cTransaction::read(SENSOR_ADDR, sensor_reading),
         ];
 
