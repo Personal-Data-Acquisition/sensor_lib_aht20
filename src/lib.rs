@@ -159,7 +159,11 @@ where I2C: i2c::Read<Error = E> + i2c::Write<Error = E>,
         let status = read_buf[0];
         Ok(status)
     }
- 
+
+    pub fn read_sensor(&mut self) -> Result< [u8; 2], Error<E>> {
+        Ok([0, 0])
+    }
+
 }
 
 
