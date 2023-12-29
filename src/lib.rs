@@ -173,6 +173,13 @@ mod sensor_test {
     use embedded_hal_mock::i2c::{Mock as I2cMock, Transaction as I2cTransaction};
     use super::*;
 
+//    fn initialized_sensor_setup(expected: &[I2cTransaction]) -> InitializedSensor<'a, I2C> {
+//        //Skip doing the INIT of the sensor.
+//        let i2c = I2cMock::new(expected);
+//        let mut sensor_instance = Sensor::new(i2c, SENSOR_ADDR);
+//        InitializedSensor {sensor: &mut sensor_instance}
+//    }
+
     #[test]
     fn self_test()
     {
@@ -214,7 +221,7 @@ mod sensor_test {
     }
 
     #[test]
-    fn checks_status()
+    fn check_status()
     {
         let sensor_status= vec![
             StatusBitMasks::CmdMode as u8 | 
@@ -235,7 +242,14 @@ mod sensor_test {
 
         inited_sensor.sensor.i2c.done();
     }
+
+    #[test]
+    fn read_sensor()
+    {
+        assert!(false); 
+    }
 }
+
 
 
 pub fn add(left: usize, right: usize) -> usize {
