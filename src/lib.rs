@@ -246,7 +246,22 @@ mod sensor_test {
     #[test]
     fn read_sensor()
     {
-        assert!(false); 
+        
+        let sensor_reading = vec![0x0, 0x0];
+        
+        let expected = [
+            I2cTransaction::write(SENSOR_ADDR, vec!(0x71)),
+            I2cTransaction::read(SENSOR_ADDR, sensor_reading),
+        ];
+
+        //Skip doing the INIT of the sensor.
+        let i2c = I2cMock::new(&expected);
+        let mut sensor_instance = Sensor::new(i2c, SENSOR_ADDR);
+        let mut inited_sensor = InitializedSensor {sensor: &mut sensor_instance}; 
+       
+        let _r = inited_sensor.check_status();
+
+        inited_sensor.sensor.i2c.done();
     }
 }
 
