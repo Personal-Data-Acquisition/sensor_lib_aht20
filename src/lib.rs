@@ -83,17 +83,21 @@ where I2C: i2c::Read<Error = E> + i2c::Write<Error = E>,
     fn clear_buf(&mut self) {
         self.sensor.buffer.map(|mut _x|{ _x = 0});
     }
+    
+    fn send_cmd(&mut self, cmd: Command) -> Result<(), Error<E>>{
+        self.clear_buf();
+        self.sensor.buffer[0] = cmd as u8;
+
+        let _read_result = self.sensor.i2c
+            .read(SENSOR_ADDR, &mut self.sensor.buffer)
+            .map_err(Error::I2C);
+        
+        return _read_result;
+    }
 
     pub fn get_status(&mut self) -> Result< u8, Error<E> >{ 
         
-        self.clear_buf();
-        self.sensor.buffer[0] = Command::ReadStatus as u8;
-
-        let _write_result = self.sensor.i2c 
-            .write(SENSOR_ADDR, &self.sensor.buffer)
-            .map_err(Error::I2C)?;
-
-        self.clear_buf();
+        self.send_cmd(Command::ReadStatus)?;
         
         let _read_result = self.sensor.i2c 
             .read(SENSOR_ADDR, &mut self.sensor.buffer)
@@ -215,4 +219,6 @@ mod sensor_test {
         inited_sensor.sensor.i2c.done();
     }
 }
+
+
 
