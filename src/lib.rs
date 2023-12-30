@@ -67,6 +67,56 @@ mod test_bitmaks {
     }
 }
 
+#[allow(dead_code)]
+pub struct SensorStatus {
+    status: u8,
+}
+
+#[allow(dead_code)]
+impl SensorStatus{
+    fn is_busy(&self) -> bool {
+        true    
+    }
+
+    fn is_calibration_enabled(&self) -> bool {
+        true
+    }
+}
+
+#[cfg(test)]
+mod sensor_status_tests {
+    use super::*;
+
+    #[test]
+    fn busy_status() {
+        let mut senstat = SensorStatus {status: 0x00};
+        assert_eq!(senstat.status, 0x00);
+
+        assert!(!senstat.is_busy());
+
+        senstat.status |= StatusBitMasks::Busy as u8;
+        assert!(senstat.is_busy());
+
+        senstat.status |= StatusBitMasks::CalEnabled as u8;
+        assert!(senstat.is_busy());
+    }
+
+    #[test]
+    fn calibration_status() {
+    
+        let mut senstat = SensorStatus {status: 0x00};
+        assert_eq!(senstat.status, 0x00);
+
+        assert!(!senstat.is_calibration_enabled());
+
+        senstat.status |= StatusBitMasks::CalEnabled as u8;
+        assert!(senstat.is_calibration_enabled());
+
+        senstat.status |= StatusBitMasks::Busy as u8;
+        assert!(senstat.is_calibration_enabled());
+    }
+}
+
 //Impliment Error type for our driver.
 #[derive(Debug, PartialEq)]
 pub enum Error<E> {
