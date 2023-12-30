@@ -14,9 +14,6 @@ mod sensor_status;
 /// AHT20 Sensor Address
 pub const SENSOR_ADDR: u8 = 0b0011_1000; // = 0x38
 
-//Seventh bit indicates read/write                                        
-pub const READ_MSK: u8 = 1<<0;        
-pub const WRITE_MSK: u8 = 0<<0;
 
 //Minimum startup wait time.
 pub const STARTUP_DELAY_MS: u8 = 40;
