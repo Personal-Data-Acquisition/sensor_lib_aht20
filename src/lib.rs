@@ -10,6 +10,9 @@ use embedded_hal::blocking::i2c;
 //Import the module with the Sensor status functions/struct
 mod sensor_status;
 
+//Import the sensor's availble i2c commands and variables
+mod commands;
+use crate::commands::Command;
 
 /// AHT20 Sensor Address
 pub const SENSOR_ADDR: u8 = 0b0011_1000; // = 0x38
@@ -20,16 +23,6 @@ pub const STARTUP_DELAY_MS: u8 = 40;
 
 
 
-//Bits and their meanings Check the datasheet for version 1.1
-//URL: www.aosong.com
-/*
- * bit[7]: Busy
- * bit[6:5]: 00: NOR mode, 01: CYC mode, 1x: CMD mode 
- * bit[4]: Reserved
- * bit[3]: CAL Enable
- * bit[2:0]: Reserved
-*/
-
 //Impliment Error type for our driver.
 #[derive(Debug, PartialEq)]
 pub enum Error<E> {
@@ -37,24 +30,6 @@ pub enum Error<E> {
     InvalidChecksum,
     UnexpectedBusy,
     Internal,
-}
-
-
-//We have sepreate consts and enums for the puporse of being used during
-//testing(consts) or as parameters(enum).
-const CMD_READ_STATUS: u8 = 0x71;
-const CMD_INIT_SENSOR: u8 = 0xBE;
-const CMD_CALIBRATE: u8 = 0xE1;
-const CMD_TRIG_MESSURE: u8 = 0xAC;
-const CMD_SOFT_RESET: u8 = 0xBA;
-
-#[repr(u8)]
-pub enum Command {
-    ReadStatus = CMD_READ_STATUS,
-    InitSensor = CMD_INIT_SENSOR,
-    Calibrate = CMD_CALIBRATE,
-    TrigMessure = CMD_TRIG_MESSURE,
-    SoftReset = CMD_SOFT_RESET,
 }
 
 
@@ -176,7 +151,7 @@ mod sensor_test {
     fn correct_init()
     {
         let expectations = [
-            I2cTransaction::write(SENSOR_ADDR, vec![CMD_INIT_SENSOR]),
+            I2cTransaction::write(SENSOR_ADDR, vec![Command::InitSensor as u8]),
         ];
         
         let i2c = I2cMock::new(&expectations);
