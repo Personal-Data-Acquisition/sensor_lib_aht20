@@ -14,13 +14,14 @@ mod sensor_status;
 mod commands;
 use crate::commands::Command;
 
+
+
+
 /// AHT20 Sensor Address
 pub const SENSOR_ADDR: u8 = 0b0011_1000; // = 0x38
 
-
-//Minimum startup wait time.
 pub const STARTUP_DELAY_MS: u8 = 40;
-
+pub const BUSY_DELAY_MS: u8 = 20;
 
 
 //Impliment Error type for our driver.
@@ -42,16 +43,6 @@ where I2C: i2c::Read + i2c::Write,
     buffer: [u8; 4],
 }
 
-//This stucture encapsulates the Sensor structure after the sensor
-//has been initialized; enforcing correct method availbility.
-#[allow(dead_code)]
-pub struct InitializedSensor<'a, I2C>
-where I2C: i2c::Read + i2c::Write,
-{
-    sensor: &'a mut Sensor<I2C>,
-}
-
-
 //Impliment functions for the sensor that require the embedded-hal
 //I2C.
 impl<E, I2C> Sensor<I2C>
@@ -71,6 +62,16 @@ where I2C: i2c::Read<Error = E> + i2c::Write<Error = E>,
 
         Ok(InitializedSensor {sensor: self})
     }
+}
+
+
+//This stucture encapsulates the Sensor structure after the sensor
+//has been initialized; enforcing correct method availbility.
+#[allow(dead_code)]
+pub struct InitializedSensor<'a, I2C>
+where I2C: i2c::Read + i2c::Write,
+{
+    sensor: &'a mut Sensor<I2C>,
 }
 
 
