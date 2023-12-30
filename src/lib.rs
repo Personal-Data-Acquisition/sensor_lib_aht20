@@ -7,6 +7,10 @@ extern crate alloc;
 //use embedded_hal::blocking::delay::{DelayMs, DelayUs};
 use embedded_hal::blocking::i2c;
 
+//Import the module with the Sensor status functions/struct
+mod sensor_status;
+
+
 /// AHT20 Sensor Address
 pub const SENSOR_ADDR: u8 = 0b0011_1000; // = 0x38
 
@@ -28,100 +32,6 @@ pub const STARTUP_DELAY_MS: u8 = 40;
  * bit[3]: CAL Enable
  * bit[2:0]: Reserved
 */
-
-//This means it's a primitive enum representation; aka uint8_t
-#[repr(u8)]
-pub enum StatusBitMasks {
-    Busy = (1 << 7),
-    NorMode = ((0 << 6) |( 0 << 5)),
-    CycMode = ((0 << 6) |( 1 << 5)),
-    CmdMode = (1 << 6),
-    CalEnabled = (1 << 3),
-}
-
-#[cfg(test)]
-mod test_bitmaks {
-    use super::*;
-
-    #[test]
-    fn check_busy() {
-        assert_eq!(StatusBitMasks::Busy as u8, 128);
-    }
-    
-    #[test]
-    fn check_modes() {
-        assert_eq!(StatusBitMasks::NorMode as u8, 0);
-        assert_eq!(StatusBitMasks::CycMode as u8, 32);
-        assert_eq!(StatusBitMasks::CmdMode as u8, 64);
-
-    }
-
-    #[test]
-    fn check_combined() {
-
-        assert_eq!(
-                StatusBitMasks::CmdMode as u8 |
-                StatusBitMasks::Busy as u8,
-                128 + 64
-            );
-    }
-}
-
-#[allow(dead_code)]
-pub struct SensorStatus {
-    status: u8,
-}
-
-#[allow(dead_code)]
-impl SensorStatus{
-    fn is_busy(&self) -> bool {
-        if self.status & StatusBitMasks::Busy as u8 > 0 {
-            return true;
-        }
-        return false;
-    }
-
-    fn is_calibration_enabled(&self) -> bool {
-        if self.status & StatusBitMasks::CalEnabled as u8 > 0 {
-            return true
-        }
-        return false 
-    }
-}
-
-#[cfg(test)]
-mod sensor_status_tests {
-    use super::*;
-
-    #[test]
-    fn busy_status() {
-        let mut senstat = SensorStatus {status: 0x00};
-        assert_eq!(senstat.status, 0x00);
-
-        assert!(!senstat.is_busy());
-
-        senstat.status |= StatusBitMasks::Busy as u8;
-        assert!(senstat.is_busy());
-
-        senstat.status |= StatusBitMasks::CalEnabled as u8;
-        assert!(senstat.is_busy());
-    }
-
-    #[test]
-    fn calibration_status() {
-    
-        let mut senstat = SensorStatus {status: 0x00};
-        assert_eq!(senstat.status, 0x00);
-
-        assert!(!senstat.is_calibration_enabled());
-
-        senstat.status |= StatusBitMasks::CalEnabled as u8;
-        assert!(senstat.is_calibration_enabled());
-
-        senstat.status |= StatusBitMasks::Busy as u8;
-        assert!(senstat.is_calibration_enabled());
-    }
-}
 
 //Impliment Error type for our driver.
 #[derive(Debug, PartialEq)]
@@ -284,8 +194,8 @@ mod sensor_test {
     fn check_status()
     {
         let sensor_status= vec![
-            StatusBitMasks::CmdMode as u8 | 
-            StatusBitMasks::CalEnabled as u8
+            sensor_status::BitMasks::CmdMode as u8 | 
+            sensor_status::BitMasks::CalEnabled as u8
             ];
         
         let expected = [
@@ -311,10 +221,10 @@ mod sensor_test {
         let sensor_reading = vec![0u8; 7];
         
         let busy_status = vec![
-            (StatusBitMasks::Busy as u8) & 0x0
+            (sensor_status::BitMasks::Busy as u8) & 0x0
         ];
         let not_busy_status = vec![
-            !(StatusBitMasks::Busy as u8) & 0x0
+            !(sensor_status::BitMasks::Busy as u8) & 0x0
         ];
 
         let expected = [
