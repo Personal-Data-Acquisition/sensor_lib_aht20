@@ -121,7 +121,12 @@ mod sensor_test {
 
     //use embedded_hal::prelude::*;
     use embedded_hal::blocking::i2c::{Read, Write};
-    use embedded_hal_mock::i2c::{Mock as I2cMock, Transaction as I2cTransaction};
+    
+    use embedded_hal_mock::i2c::{
+        Mock as I2cMock, 
+        Transaction as I2cTransaction
+    };
+    
     use super::*;
 
     #[test]
@@ -153,7 +158,10 @@ mod sensor_test {
     fn correct_init()
     {
         let expectations = [
-            I2cTransaction::write(SENSOR_ADDR, vec![Command::InitSensor as u8]),
+            I2cTransaction::write(
+                SENSOR_ADDR, 
+                vec![Command::InitSensor as u8]
+                ),
         ];
         
         let i2c = I2cMock::new(&expectations);
@@ -180,7 +188,9 @@ mod sensor_test {
         //Skip doing the INIT of the sensor.
         let i2c = I2cMock::new(&expected);
         let mut sensor_instance = Sensor::new(i2c, SENSOR_ADDR);
-        let mut inited_sensor = InitializedSensor {sensor: &mut sensor_instance}; 
+        let mut inited_sensor = InitializedSensor {
+            sensor: &mut sensor_instance
+        }; 
        
         let _r = inited_sensor.get_status();
 
@@ -212,7 +222,9 @@ mod sensor_test {
         //Skip doing the INIT of the sensor.
         let i2c = I2cMock::new(&expected);
         let mut sensor_instance = Sensor::new(i2c, SENSOR_ADDR);
-        let mut inited_sensor = InitializedSensor {sensor: &mut sensor_instance}; 
+        let mut inited_sensor = InitializedSensor {
+            sensor: &mut sensor_instance
+        }; 
        
         let _r = inited_sensor.get_status();
 
