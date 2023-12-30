@@ -1,3 +1,12 @@
+//Bits and their meanings Check the datasheet for version 1.1
+//URL: www.aosong.com
+/*
+ * bit[7]: Busy
+ * bit[6:5]: 00: NOR mode, 01: CYC mode, 1x: CMD mode 
+ * bit[4]: Reserved
+ * bit[3]: CAL Enable
+ * bit[2:0]: Reserved
+*/
 
 //This means it's a primitive enum representation; aka uint8_t
 #[repr(u8)]
