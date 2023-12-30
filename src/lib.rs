@@ -75,11 +75,17 @@ pub struct SensorStatus {
 #[allow(dead_code)]
 impl SensorStatus{
     fn is_busy(&self) -> bool {
-        true    
+        if self.status & StatusBitMasks::Busy as u8 > 0 {
+            return true;
+        }
+        return false;
     }
 
     fn is_calibration_enabled(&self) -> bool {
-        true
+        if self.status & StatusBitMasks::CalEnabled as u8 > 0 {
+            return true
+        }
+        return false 
     }
 }
 
