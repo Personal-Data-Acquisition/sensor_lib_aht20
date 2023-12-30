@@ -85,21 +85,21 @@ where I2C: i2c::Read<Error = E> + i2c::Write<Error = E>,
     }
 
     pub fn get_status(&mut self) -> Result< u8, Error<E> >{ 
-        let write_buf = vec![Command::ReadStatus as u8];
         
         self.clear_buf();
+        self.sensor.buffer[0] = Command::ReadStatus as u8;
 
         let _write_result = self.sensor.i2c 
-            .write(SENSOR_ADDR, &write_buf)
-            .map_err(Error::I2C)?;
- 
-        let mut read_buf  = [0 as u8];
-        
-        let _read_result = self.sensor.i2c 
-            .read(SENSOR_ADDR, &mut read_buf)
+            .write(SENSOR_ADDR, &self.sensor.buffer)
             .map_err(Error::I2C)?;
 
-        let status = read_buf[0];
+        self.clear_buf();
+        
+        let _read_result = self.sensor.i2c 
+            .read(SENSOR_ADDR, &mut self.sensor.buffer)
+            .map_err(Error::I2C)?;
+
+        let status = self.sensor.buffer[0]; 
         Ok(status)
     }
 
