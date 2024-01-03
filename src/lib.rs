@@ -300,7 +300,47 @@ mod sensor_test {
     #[test]
     fn timed_out_init()
     {
-        assert!(false);
+
+        let busy_status: u8 = sensor_status::BitMasks::Busy as u8;
+
+        let expectations = [
+            I2cTransaction::write(
+                SENSOR_ADDR,
+                vec![Command::InitSensor as u8]
+                ),
+            I2cTransaction::write(
+                SENSOR_ADDR, 
+                vec![Command::ReadStatus as u8]
+                ),
+            I2cTransaction::read(SENSOR_ADDR, vec![busy_status]),
+
+            I2cTransaction::write(
+                SENSOR_ADDR, 
+                vec![Command::ReadStatus as u8]
+                ),
+            I2cTransaction::read(SENSOR_ADDR, vec![busy_status]),
+
+            I2cTransaction::write(
+                SENSOR_ADDR, 
+                vec![Command::ReadStatus as u8]
+                ),
+            I2cTransaction::read(SENSOR_ADDR, vec![busy_status]),
+
+            I2cTransaction::write(
+                SENSOR_ADDR, 
+                vec![Command::ReadStatus as u8]
+                ),
+            I2cTransaction::read(SENSOR_ADDR, vec![busy_status]),
+        ];
+
+
+        let i2c = I2cMock::new(&expectations);
+        let mut sensor_instance = Sensor::new(i2c, SENSOR_ADDR);
+ 
+        let mut mock_delay = delay::MockNoop;
+        let initialized_sensor_instance = sensor_instance.init(&mut mock_delay);       
+        
+        assert!(initialized_sensor_instance.is_err());
     }
 
     #[test]
