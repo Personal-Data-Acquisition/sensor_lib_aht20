@@ -126,8 +126,25 @@ where I2C: i2c::Read<Error = E> + i2c::Write<Error = E>,
         Ok(s)
     }
 
-    pub fn read_sensor(&mut self) -> Result< [u8; 2], Error<E>> {
-        Ok([0, 0])
+    pub fn read_sensor(
+        &mut self,
+        delay: &mut (impl DelayUs<u16> + DelayMs<u16>),
+        ) -> Result< [u8; 7], Error<E>> {
+        //check to make sure the sensor isn't busy.
+        self.get_status()?;
+
+
+        //trigger a messurement.
+        let rbuf = [0u8; 7];
+        self.sensor.i2c.write(self.sensor.address, &rbuf)
+            .map_err(Error::I2C)?;
+
+        //wait for the messurement.
+        delay.delay_ms(BUSY_DELAY_MS);
+
+        //timeout if takes too long.
+        
+        Ok(rbuf)
     }
 
 }
@@ -363,11 +380,11 @@ mod sensor_test {
         let busy_status = vec![BitMasks::Busy as u8];
         let not_busy_status = vec![0x00];
 
-        //0xAC is init.
         let expected = [
             I2cTransaction::write(SENSOR_ADDR, vec!(commands::TRIG_MESSURE)),
             I2cTransaction::write(SENSOR_ADDR, vec!(commands::READ_STATUS)),
             I2cTransaction::read(SENSOR_ADDR, busy_status),
+            I2cTransaction::write(SENSOR_ADDR, vec!(commands::READ_STATUS)),
             I2cTransaction::read(SENSOR_ADDR, not_busy_status),
             I2cTransaction::read(SENSOR_ADDR, sensor_reading),
         ];
@@ -378,8 +395,11 @@ mod sensor_test {
         let mut inited_sensor = InitializedSensor {
             sensor: &mut sensor_instance
         }; 
-       
-        let _r = inited_sensor.get_status();
+
+
+        let mut mock_delay = delay::MockNoop;
+        let data = inited_sensor.read_sensor(&mut mock_delay);
+        assert!(data.is_ok());
 
         inited_sensor.sensor.i2c.done();
     }
