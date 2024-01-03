@@ -73,7 +73,7 @@ where I2C: i2c::Read<Error = E> + i2c::Write<Error = E>,
 
         //check if the status is good.
         let mut status = self.read_status()?;
-        for _i in 2..MAX_STATUS_CHECK_ATTEMPTS {
+        for _i in 0..MAX_STATUS_CHECK_ATTEMPTS {
             if (status & (sensor_status::BitMasks::Busy as u8)) != 0 {
                 delay.delay_ms(BUSY_DELAY_MS); 
                 status = self.read_status()?;
