@@ -4,8 +4,6 @@
 #[macro_use]
 extern crate alloc;
 
-//use embedded_hal::blocking::delay::{DelayMs, DelayUs};
-//use embedded_hal::blocking::i2c;
 use embedded_hal::blocking::{
     i2c,
     delay::DelayMs,
@@ -35,6 +33,7 @@ pub enum Error<E> {
     InvalidChecksum,
     UnexpectedBusy,
     Internal,
+    DeviceTimeOut
 }
 
 
@@ -82,7 +81,7 @@ where I2C: i2c::Read<Error = E> + i2c::Write<Error = E>,
                 return Ok(InitializedSensor {sensor: self});
             }
         }
-        Err(Error::UnexpectedBusy)
+        Err(Error::DeviceTimeOut)
     }
 
 
@@ -339,9 +338,10 @@ mod sensor_test {
  
         let mut mock_delay = delay::MockNoop;
         let initialized_sensor_instance = sensor_instance.init(&mut mock_delay);       
-        
+       
         assert!(initialized_sensor_instance.is_err());
     }
+
 
     #[test]
     fn get_initialized_status()
