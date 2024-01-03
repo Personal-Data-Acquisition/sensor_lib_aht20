@@ -81,9 +81,8 @@ where I2C: i2c::Read<Error = E> + i2c::Write<Error = E>,
                 return Ok(InitializedSensor {sensor: self});
             }
         }
-        Err(Error::DeviceTimeOut)
+        return Err(Error::DeviceTimeOut);
     }
-
 
     pub fn read_status(&mut self) -> Result<u8, Error<E>>
     {
