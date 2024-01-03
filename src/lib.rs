@@ -12,6 +12,11 @@ use embedded_hal::blocking::{
 
 //Import the module with the Sensor status functions/struct
 mod sensor_status;
+#[allow(unused_imports)]
+use crate::sensor_status::{
+    SensorStatus, 
+    BitMasks
+};
 
 //Import the sensor's availble i2c commands and variables
 mod commands;
@@ -84,7 +89,7 @@ where I2C: i2c::Read<Error = E> + i2c::Write<Error = E>,
         return Err(Error::DeviceTimeOut);
     }
 
-    pub fn read_status(&mut self) -> Result<sensor_status::SensorStatus, Error<E>>
+    pub fn read_status(&mut self) -> Result<SensorStatus, Error<E>>
     {
         self.i2c 
             .write(self.address, &[Command::ReadStatus as u8])
@@ -97,7 +102,7 @@ where I2C: i2c::Read<Error = E> + i2c::Write<Error = E>,
             .read(self.address, &mut buf)
             .map_err(Error::I2C)?;
 
-        Ok(sensor_status::SensorStatus{ status: buf[0]})
+        Ok(SensorStatus{ status: buf[0]})
     }
 }
 
@@ -116,7 +121,7 @@ where I2C: i2c::Read + i2c::Write,
 impl <'a, E, I2C> InitializedSensor<'a, I2C>
 where I2C: i2c::Read<Error = E> + i2c::Write<Error = E>,
 {
-    pub fn get_status(&mut self) -> Result< sensor_status::SensorStatus, Error<E> >{ 
+    pub fn get_status(&mut self) -> Result<SensorStatus, Error<E> >{ 
         let s = self.sensor.read_status()?;
 
         Ok(s)
@@ -200,7 +205,7 @@ mod sensor_test {
     #[test]
     fn get_status_busy()
     {
-        let busy_status: u8 = sensor_status::BitMasks::Busy as u8;
+        let busy_status: u8 = BitMasks::Busy as u8;
 
         let expectations = [
             I2cTransaction::write(
@@ -227,11 +232,11 @@ mod sensor_test {
     {
 
         let busy_status = vec![
-            sensor_status::BitMasks::Busy as u8 
+            BitMasks::Busy as u8 
         ];
 
         let not_busy_status = vec![
-            !(sensor_status::BitMasks::Busy as u8) 
+            !(BitMasks::Busy as u8) 
         ];
 
         let expectations = [
@@ -275,7 +280,7 @@ mod sensor_test {
     fn timed_out_init()
     {
 
-        let busy_status: u8 = sensor_status::BitMasks::Busy as u8;
+        let busy_status: u8 = BitMasks::Busy as u8;
 
         let expectations = [
             I2cTransaction::write(
@@ -323,8 +328,8 @@ mod sensor_test {
     {
         let wbuf = vec![Command::ReadStatus as u8];
         let sensor_status= vec![
-            sensor_status::BitMasks::CmdMode as u8 | 
-            sensor_status::BitMasks::CalEnabled as u8
+            BitMasks::CmdMode as u8 | 
+            BitMasks::CalEnabled as u8
             ];
         
         let expected = [
@@ -353,10 +358,10 @@ mod sensor_test {
         let sensor_reading = vec![0u8; 7];
         
         let busy_status = vec![
-            (sensor_status::BitMasks::Busy as u8) & 0x0
+            (BitMasks::Busy as u8) & 0x0
         ];
         let not_busy_status = vec![
-            !(sensor_status::BitMasks::Busy as u8) & 0x0
+            !(BitMasks::Busy as u8) & 0x0
         ];
 
         let expected = [
