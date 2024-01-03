@@ -123,7 +123,6 @@ where I2C: i2c::Read<Error = E> + i2c::Write<Error = E>,
 {
     pub fn get_status(&mut self) -> Result<SensorStatus, Error<E> >{ 
         let s = self.sensor.read_status()?;
-
         Ok(s)
     }
 
@@ -200,6 +199,7 @@ mod sensor_test {
         
         assert!(results.is_ok());
         assert!(!results.unwrap().is_busy());
+        sensor_instance.i2c.done();
     }
 
     #[test]
@@ -224,7 +224,8 @@ mod sensor_test {
         let results = sensor_instance.read_status();
         
         assert!(results.is_ok());
-        assert!(results.unwrap().is_busy())
+        assert!(results.unwrap().is_busy());
+        sensor_instance.i2c.done();
     }
 
     #[test]
@@ -320,6 +321,7 @@ mod sensor_test {
         let initialized_sensor_instance = sensor_instance.init(&mut mock_delay);       
        
         assert!(initialized_sensor_instance.is_err());
+        sensor_instance.i2c.done();
     }
 
 
@@ -348,7 +350,8 @@ mod sensor_test {
 
         inited_sensor.sensor.i2c.done();
         assert!(r.is_ok());
-        assert_eq!(r.unwrap().status, sensor_status[0])
+        assert_eq!(r.unwrap().status, sensor_status[0]);
+        inited_sensor.sensor.i2c.done();
     }
 
     #[test]
@@ -357,16 +360,13 @@ mod sensor_test {
         //prepare 7-Bytes of data.
         let sensor_reading = vec![0u8; 7];
         
-        let busy_status = vec![
-            (BitMasks::Busy as u8) & 0x0
-        ];
-        let not_busy_status = vec![
-            !(BitMasks::Busy as u8) & 0x0
-        ];
+        let busy_status = vec![BitMasks::Busy as u8];
+        let not_busy_status = vec![0x00];
 
+        //0xAC is init.
         let expected = [
-            I2cTransaction::write(SENSOR_ADDR, vec!(0xAC)),
-            I2cTransaction::write(SENSOR_ADDR, vec!(0x71)),
+            I2cTransaction::write(SENSOR_ADDR, vec!(commands::TRIG_MESSURE)),
+            I2cTransaction::write(SENSOR_ADDR, vec!(commands::READ_STATUS)),
             I2cTransaction::read(SENSOR_ADDR, busy_status),
             I2cTransaction::read(SENSOR_ADDR, not_busy_status),
             I2cTransaction::read(SENSOR_ADDR, sensor_reading),
@@ -384,8 +384,6 @@ mod sensor_test {
         inited_sensor.sensor.i2c.done();
     }
 }
-
-
 
 
 

@@ -1,5 +1,4 @@
 
-
 //We have sepreate consts and enums for the puporse of being used during
 //testing(consts) or as parameters(enum).
 pub const READ_STATUS: u8 = 0x71;
