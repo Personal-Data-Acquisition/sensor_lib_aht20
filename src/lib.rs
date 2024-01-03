@@ -73,7 +73,7 @@ where I2C: i2c::Read<Error = E> + i2c::Write<Error = E>,
         //check if the status is good.
         let mut status = self.read_status()?;
         for _i in 0..MAX_STATUS_CHECK_ATTEMPTS {
-            if (status & (sensor_status::BitMasks::Busy as u8)) != 0 {
+            if status.is_busy() {
                 delay.delay_ms(BUSY_DELAY_MS); 
                 status = self.read_status()?;
             }
@@ -84,7 +84,7 @@ where I2C: i2c::Read<Error = E> + i2c::Write<Error = E>,
         return Err(Error::DeviceTimeOut);
     }
 
-    pub fn read_status(&mut self) -> Result<u8, Error<E>>
+    pub fn read_status(&mut self) -> Result<sensor_status::SensorStatus, Error<E>>
     {
         self.i2c 
             .write(self.address, &[Command::ReadStatus as u8])
@@ -97,7 +97,7 @@ where I2C: i2c::Read<Error = E> + i2c::Write<Error = E>,
             .read(self.address, &mut buf)
             .map_err(Error::I2C)?;
 
-        Ok(buf[0])
+        Ok(sensor_status::SensorStatus{ status: buf[0]})
     }
 }
 
@@ -116,7 +116,7 @@ where I2C: i2c::Read + i2c::Write,
 impl <'a, E, I2C> InitializedSensor<'a, I2C>
 where I2C: i2c::Read<Error = E> + i2c::Write<Error = E>,
 {
-    pub fn get_status(&mut self) -> Result< u8, Error<E> >{ 
+    pub fn get_status(&mut self) -> Result< sensor_status::SensorStatus, Error<E> >{ 
         let s = self.sensor.read_status()?;
 
         Ok(s)
@@ -194,7 +194,7 @@ mod sensor_test {
         let results = sensor_instance.read_status();
         
         assert!(results.is_ok());
-        assert_eq!(results.unwrap(), not_busy_status);
+        assert!(!results.unwrap().is_busy());
     }
 
     #[test]
@@ -219,7 +219,7 @@ mod sensor_test {
         let results = sensor_instance.read_status();
         
         assert!(results.is_ok());
-        assert_eq!(results.unwrap(), busy_status);
+        assert!(results.unwrap().is_busy())
     }
 
     #[test]
@@ -343,13 +343,12 @@ mod sensor_test {
 
         inited_sensor.sensor.i2c.done();
         assert!(r.is_ok());
-        assert_eq!(r.unwrap(), sensor_status[0])
+        assert_eq!(r.unwrap().status, sensor_status[0])
     }
 
     #[test]
     fn read_sensor()
-    {
-        
+    {        
         //prepare 7-Bytes of data.
         let sensor_reading = vec![0u8; 7];
         
