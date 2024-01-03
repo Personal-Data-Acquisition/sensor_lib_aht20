@@ -5,7 +5,12 @@
 extern crate alloc;
 
 //use embedded_hal::blocking::delay::{DelayMs, DelayUs};
-use embedded_hal::blocking::i2c;
+//use embedded_hal::blocking::i2c;
+use embedded_hal::blocking::{
+    i2c,
+    delay::DelayMs,
+    delay::DelayUs,
+};
 
 //Import the module with the Sensor status functions/struct
 mod sensor_status;
@@ -15,13 +20,12 @@ mod commands;
 use crate::commands::Command;
 
 
-
-
 /// AHT20 Sensor Address
 pub const SENSOR_ADDR: u8 = 0b0011_1000; // = 0x38
 
-pub const STARTUP_DELAY_MS: u8 = 40;
-pub const BUSY_DELAY_MS: u8 = 20;
+pub const STARTUP_DELAY_MS: u16 = 40;
+pub const BUSY_DELAY_MS: u16 = 20;
+pub const MAX_STATUS_CHECK_ATTEMPTS: u16 = 3;
 
 
 //Impliment Error type for our driver.
@@ -54,9 +58,14 @@ where I2C: i2c::Read<Error = E> + i2c::Write<Error = E>,
         Sensor{i2c, address, buffer: buf}
     }
 
-
-    pub fn init(&mut self) -> Result<InitializedSensor<I2C>, Error<E>>
+    pub fn init(
+        &mut self,
+        delay: &mut (impl DelayUs<u16> + DelayMs<u16>),
+        ) -> Result<InitializedSensor<I2C>, Error<E>>
     {
+        //we need a startup delay according to the datasheet.
+        delay.delay_ms(STARTUP_DELAY_MS);
+
         let tmp_buf = [Command::InitSensor as u8];
         let _result = self.i2c.write(SENSOR_ADDR, &tmp_buf);
 
@@ -127,6 +136,9 @@ mod sensor_test {
         Transaction as I2cTransaction
     };
     
+    //use embedded_hal_mock::timer;
+    use embedded_hal_mock::delay;
+
     use super::*;
 
     #[test]
@@ -157,17 +169,39 @@ mod sensor_test {
     #[test]
     fn correct_init()
     {
+
+        let busy_status = vec![
+            (sensor_status::BitMasks::Busy as u8) & 0x0
+        ];
+
+        let not_busy_status = vec![
+            !(sensor_status::BitMasks::Busy as u8) & 0x0
+        ];
+
         let expectations = [
             I2cTransaction::write(
+                SENSOR_ADDR, vec![Command::InitSensor as u8]
+                ),
+            I2cTransaction::write_read(
                 SENSOR_ADDR, 
-                vec![Command::InitSensor as u8]
+                vec![Command::ReadStatus as u8], busy_status.clone()
+                ),
+            I2cTransaction::write_read(
+                SENSOR_ADDR, 
+                vec![Command::ReadStatus as u8], busy_status.clone()
+                ),
+            I2cTransaction::write_read(
+                SENSOR_ADDR, 
+                vec![Command::ReadStatus as u8], not_busy_status.clone()
                 ),
         ];
         
         let i2c = I2cMock::new(&expectations);
 
         let mut sensor_instance = Sensor::new(i2c, SENSOR_ADDR);
-        let initialized_sensor_instance = sensor_instance.init();
+
+        let mut mock_delay = delay::MockNoop;
+        let initialized_sensor_instance = sensor_instance.init(&mut mock_delay);
 
         initialized_sensor_instance.unwrap().sensor.i2c.done();
     }
@@ -231,6 +265,5 @@ mod sensor_test {
         inited_sensor.sensor.i2c.done();
     }
 }
-
 
 
