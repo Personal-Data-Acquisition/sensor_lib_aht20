@@ -117,32 +117,10 @@ where I2C: i2c::Read + i2c::Write,
 impl <'a, E, I2C> InitializedSensor<'a, I2C>
 where I2C: i2c::Read<Error = E> + i2c::Write<Error = E>,
 {
-
-    fn clear_buf(&mut self) {
-        self.sensor.buffer.map(|mut _x|{ _x = 0});
-    }
-    
-    fn send_cmd(&mut self, cmd: Command) -> Result<(), Error<E>>{
-        self.clear_buf();
-        self.sensor.buffer[0] = cmd as u8;
-
-        let _read_result = self.sensor.i2c
-            .read(SENSOR_ADDR, &mut self.sensor.buffer)
-            .map_err(Error::I2C);
-        
-        return _read_result;
-    }
-
     pub fn get_status(&mut self) -> Result< u8, Error<E> >{ 
-        
-        self.send_cmd(Command::ReadStatus)?;
-        
-        let _read_result = self.sensor.i2c 
-            .read(SENSOR_ADDR, &mut self.sensor.buffer)
-            .map_err(Error::I2C)?;
+        let s = self.sensor.read_status()?;
 
-        let status = self.sensor.buffer[0]; 
-        Ok(status)
+        Ok(s)
     }
 
     pub fn read_sensor(&mut self) -> Result< [u8; 2], Error<E>> {
@@ -282,8 +260,6 @@ mod sensor_test {
             I2cTransaction::read(
                 SENSOR_ADDR, not_busy_status.clone()
                 ),
-
-
         ];
         
         let i2c = I2cMock::new(&expectations);
@@ -346,14 +322,15 @@ mod sensor_test {
     #[test]
     fn get_initialized_status()
     {
+        let wbuf = vec![Command::ReadStatus as u8];
         let sensor_status= vec![
             sensor_status::BitMasks::CmdMode as u8 | 
             sensor_status::BitMasks::CalEnabled as u8
             ];
         
         let expected = [
-            I2cTransaction::write(SENSOR_ADDR, vec!(0x71)),
-            I2cTransaction::read(SENSOR_ADDR, sensor_status),
+            I2cTransaction::write(SENSOR_ADDR, wbuf),
+            I2cTransaction::read(SENSOR_ADDR, sensor_status.clone()),
         ];
 
         //Skip doing the INIT of the sensor.
@@ -363,9 +340,11 @@ mod sensor_test {
             sensor: &mut sensor_instance
         }; 
        
-        let _r = inited_sensor.get_status();
+        let r = inited_sensor.get_status();
 
         inited_sensor.sensor.i2c.done();
+        assert!(r.is_ok());
+        assert_eq!(r.unwrap(), sensor_status[0])
     }
 
     #[test]
