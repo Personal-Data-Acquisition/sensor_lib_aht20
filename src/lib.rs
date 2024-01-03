@@ -207,6 +207,12 @@ mod sensor_test {
     }
 
     #[test]
+    fn timed_out_init()
+    {
+        assert!(false);
+    }
+
+    #[test]
     fn get_status()
     {
         let sensor_status= vec![
