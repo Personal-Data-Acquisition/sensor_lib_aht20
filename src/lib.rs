@@ -52,11 +52,13 @@ where I2C: i2c::Read + i2c::Write,
 impl<E, I2C> Sensor<I2C>
 where I2C: i2c::Read<Error = E> + i2c::Write<Error = E>,
 {
+
     //We're implimenting a new function to return an instance of the sensor
     pub fn new(i2c: I2C, address: u8) -> Self {
         let buf = [0, 0, 0, 0];
         Sensor{i2c, address, buffer: buf}
     }
+
 
     pub fn init(
         &mut self,
@@ -65,11 +67,39 @@ where I2C: i2c::Read<Error = E> + i2c::Write<Error = E>,
     {
         //we need a startup delay according to the datasheet.
         delay.delay_ms(STARTUP_DELAY_MS);
+             
+        let tmp_buf = [Command::InitSensor as u8,];
+        self.i2c.write(self.address, &tmp_buf).map_err(Error::I2C)?;
 
-        let tmp_buf = [Command::InitSensor as u8];
-        let _result = self.i2c.write(SENSOR_ADDR, &tmp_buf);
+        //check if the status is good.
+        let mut status = self.read_status()?;
+        for _i in 2..MAX_STATUS_CHECK_ATTEMPTS {
+            if (status & (sensor_status::BitMasks::Busy as u8)) != 0 {
+                delay.delay_ms(BUSY_DELAY_MS); 
+                status = self.read_status()?;
+            }
+            else {
+                return Ok(InitializedSensor {sensor: self});
+            }
+        }
+        Err(Error::UnexpectedBusy)
+    }
 
-        Ok(InitializedSensor {sensor: self})
+
+    pub fn read_status(&mut self) -> Result<u8, Error<E>>
+    {
+        self.i2c 
+            .write(self.address, &[Command::ReadStatus as u8])
+            .map_err(Error::I2C)?;
+        
+
+        let mut buf = [0];
+        //now try to read it.
+        self.i2c
+            .read(self.address, &mut buf)
+            .map_err(Error::I2C)?;
+
+        Ok(buf[0])
     }
 }
 
@@ -167,33 +197,94 @@ mod sensor_test {
     }
 
     #[test]
+    fn get_status()
+    {
+        let not_busy_status: u8 = 0x00;
+
+        let expectations = [
+            I2cTransaction::write(
+                SENSOR_ADDR, 
+                vec![Command::ReadStatus as u8]
+                ),
+            I2cTransaction::read(
+                SENSOR_ADDR,
+                vec![not_busy_status]),
+        ];
+
+
+        let i2c = I2cMock::new(&expectations);
+        let mut sensor_instance = Sensor::new(i2c, SENSOR_ADDR);
+
+        let results = sensor_instance.read_status();
+        
+        assert!(results.is_ok());
+        assert_eq!(results.unwrap(), not_busy_status);
+    }
+
+    #[test]
+    fn get_status_busy()
+    {
+        let busy_status: u8 = sensor_status::BitMasks::Busy as u8;
+
+        let expectations = [
+            I2cTransaction::write(
+                SENSOR_ADDR, 
+                vec![Command::ReadStatus as u8]
+                ),
+            I2cTransaction::read(
+                SENSOR_ADDR,
+                vec![busy_status]),
+        ];
+
+
+        let i2c = I2cMock::new(&expectations);
+        let mut sensor_instance = Sensor::new(i2c, SENSOR_ADDR);
+
+        let results = sensor_instance.read_status();
+        
+        assert!(results.is_ok());
+        assert_eq!(results.unwrap(), busy_status);
+    }
+
+    #[test]
     fn correct_init()
     {
 
         let busy_status = vec![
-            (sensor_status::BitMasks::Busy as u8) & 0x0
+            sensor_status::BitMasks::Busy as u8 
         ];
 
         let not_busy_status = vec![
-            !(sensor_status::BitMasks::Busy as u8) & 0x0
+            !(sensor_status::BitMasks::Busy as u8) 
         ];
 
         let expectations = [
             I2cTransaction::write(
                 SENSOR_ADDR, vec![Command::InitSensor as u8]
                 ),
-            I2cTransaction::write_read(
-                SENSOR_ADDR, 
-                vec![Command::ReadStatus as u8], busy_status.clone()
+
+            I2cTransaction::write(
+                SENSOR_ADDR, vec![Command::ReadStatus as u8]
                 ),
-            I2cTransaction::write_read(
-                SENSOR_ADDR, 
-                vec![Command::ReadStatus as u8], busy_status.clone()
+            I2cTransaction::read(
+                SENSOR_ADDR, busy_status.clone()
                 ),
-            I2cTransaction::write_read(
-                SENSOR_ADDR, 
-                vec![Command::ReadStatus as u8], not_busy_status.clone()
+
+            I2cTransaction::write(
+                SENSOR_ADDR, vec![Command::ReadStatus as u8]
                 ),
+            I2cTransaction::read(
+                SENSOR_ADDR, busy_status.clone()
+                ),
+
+            I2cTransaction::write(
+                SENSOR_ADDR, vec![Command::ReadStatus as u8]
+                ),
+            I2cTransaction::read(
+                SENSOR_ADDR, not_busy_status.clone()
+                ),
+
+
         ];
         
         let i2c = I2cMock::new(&expectations);
@@ -213,7 +304,7 @@ mod sensor_test {
     }
 
     #[test]
-    fn get_status()
+    fn get_initialized_status()
     {
         let sensor_status= vec![
             sensor_status::BitMasks::CmdMode as u8 | 
@@ -271,5 +362,8 @@ mod sensor_test {
         inited_sensor.sensor.i2c.done();
     }
 }
+
+
+
 
 
