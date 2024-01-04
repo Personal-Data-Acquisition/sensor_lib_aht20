@@ -253,13 +253,11 @@ mod sensor_test {
     {
 
         let calibrated = vec![
-            (BitMasks::CalEnabled as u8) | !(BitMasks::Busy as u8)
+           (BitMasks::CalEnabled as u8)
         ];
         assert_eq!(calibrated[0], 0b0000_1000);
 
-        let not_calibrated = vec![
-            !(BitMasks::CalEnabled as u8) | !(BitMasks::Busy as u8)
-        ];
+        let not_calibrated = vec![0];
         assert_eq!(not_calibrated[0], 0b0000_0000);
 
         let expectations = [
