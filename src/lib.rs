@@ -70,8 +70,8 @@ where I2C: i2c::Read<Error = E> + i2c::Write<Error = E>,
         ) -> Result<InitializedSensor<I2C>, Error<E>>
     {
         //we need a startup delay according to the datasheet.
-        delay.delay_ms(STARTUP_DELAY_MS);
-             
+        delay.delay_ms(STARTUP_DELAY_MS); 
+
         let tmp_buf = [Command::InitSensor as u8,];
         self.i2c.write(self.address, &tmp_buf).map_err(Error::I2C)?;
 
@@ -81,6 +81,9 @@ where I2C: i2c::Read<Error = E> + i2c::Write<Error = E>,
             if status.is_busy() {
                 delay.delay_ms(BUSY_DELAY_MS); 
                 status = self.read_status()?;
+            }
+            else if !status.is_calibration_enabled() {
+
             }
             else {
                 return Ok(InitializedSensor {sensor: self});
@@ -249,39 +252,27 @@ mod sensor_test {
     fn correct_init()
     {
 
-        let busy_status = vec![
-            BitMasks::Busy as u8 
+        let calibrated = vec![
+            (BitMasks::CalEnabled as u8) | !(BitMasks::Busy as u8)
         ];
+        assert_eq!(calibrated[0], 0b0000_1000);
 
-        let not_busy_status = vec![
-            !(BitMasks::Busy as u8) 
+        let not_calibrated = vec![
+            !(BitMasks::CalEnabled as u8) | !(BitMasks::Busy as u8)
         ];
+        assert_eq!(not_calibrated[0], 0b0000_0000);
 
         let expectations = [
             I2cTransaction::write(
-                SENSOR_ADDR, vec![Command::InitSensor as u8]
-                ),
-
-            I2cTransaction::write(
-                SENSOR_ADDR, vec![Command::ReadStatus as u8]
-                ),
+                SENSOR_ADDR, vec![Command::ReadStatus as u8]),
             I2cTransaction::read(
-                SENSOR_ADDR, busy_status.clone()
-                ),
-
+                SENSOR_ADDR, not_calibrated.clone()),
             I2cTransaction::write(
-                SENSOR_ADDR, vec![Command::ReadStatus as u8]
-                ),
-            I2cTransaction::read(
-                SENSOR_ADDR, busy_status.clone()
-                ),
-
+                SENSOR_ADDR, vec![Command::InitSensor as u8]),
             I2cTransaction::write(
-                SENSOR_ADDR, vec![Command::ReadStatus as u8]
-                ),
+                SENSOR_ADDR, vec![Command::ReadStatus as u8]),
             I2cTransaction::read(
-                SENSOR_ADDR, not_busy_status.clone()
-                ),
+                SENSOR_ADDR, calibrated.clone()),
         ];
         
         let i2c = I2cMock::new(&expectations);
@@ -290,6 +281,8 @@ mod sensor_test {
 
         let mut mock_delay = delay::MockNoop;
         let initialized_sensor_instance = sensor_instance.init(&mut mock_delay);
+        
+        assert!(initialized_sensor_instance.is_ok());
 
         initialized_sensor_instance.unwrap().sensor.i2c.done();
     }
