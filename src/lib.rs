@@ -360,30 +360,23 @@ mod sensor_test {
 
 #[cfg(test)]
 mod initialized_sensor_tests {
-
-    use embedded_hal;
     use embedded_hal_mock;
 
-    //use embedded_hal::prelude::*;
-    use embedded_hal::blocking::i2c::{Read, Write};
-    
     use embedded_hal_mock::i2c::{
         Mock as I2cMock, 
         Transaction as I2cTransaction
     };
     
-    //use embedded_hal_mock::timer;
     use embedded_hal_mock::delay;
 
     use super::*;
-
-
 
     #[test]
     fn read_sensor()
     {        
         //prepare 7-Bytes of data.
         let sensor_reading = vec![0u8; 7];
+        
         
         let busy_status = vec![BitMasks::Busy as u8];
         let not_busy_status = vec![0x00];
@@ -403,13 +396,13 @@ mod initialized_sensor_tests {
         let mut inited_sensor = InitializedSensor {
             sensor: &mut sensor_instance
         }; 
-
-
+        
         let mut mock_delay = delay::MockNoop;
         let data = inited_sensor.read_sensor(&mut mock_delay);
+        
         assert!(data.is_ok());
 
         inited_sensor.sensor.i2c.done();
     }
-
+    
 }
