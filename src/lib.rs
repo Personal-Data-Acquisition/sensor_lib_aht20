@@ -98,10 +98,8 @@ where I2C: i2c::Read<Error = E> + i2c::Write<Error = E>,
         return Err(Error::DeviceTimeOut);
     }
 
-    pub fn calibrate(
-        &mut self,
-        delay: &mut (impl DelayMs<u16> + DelayUs<u16>)
-        ) -> Result<SensorStatus, Error<E>>
+    pub fn calibrate<D>(&mut self, delay: &mut D) -> Result<SensorStatus, Error<E>>
+        where D:  DelayMs<u16> + DelayUs<u16>,
     {
         let wbuf = vec![Command::Calibrate as u8, 0x08, 0x00];
         self.i2c.write(self.address, &wbuf)
