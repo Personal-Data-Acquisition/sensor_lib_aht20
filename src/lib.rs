@@ -73,30 +73,17 @@ where I2C: i2c::Read<Error = E> + i2c::Write<Error = E>,
         //we need a startup delay according to the datasheet.
         delay.delay_ms(STARTUP_DELAY_MS); 
 
+       let tmp_buf = [Command::InitSensor as u8,];
+        self.i2c.write(self.address, &tmp_buf).map_err(Error::I2C)?;
+
         let status = self.read_status()?;
         if !status.is_calibration_enabled() {
             self.calibrate(delay)?;
         }
-
-        let tmp_buf = [Command::InitSensor as u8,];
-        self.i2c.write(self.address, &tmp_buf).map_err(Error::I2C)?;
-
-        //check if the status is good.
-        let mut status = self.read_status()?;
-        for _i in 0..MAX_STATUS_CHECK_ATTEMPTS {
-            if status.is_busy() {
-                delay.delay_ms(BUSY_DELAY_MS); 
-                status = self.read_status()?;
-            }
-            else if !status.is_calibration_enabled() {
-
-            }
-            else {
-                return Ok(InitializedSensor {sensor: self});
-            }
-        }
-        return Err(Error::DeviceTimeOut);
+        
+        return Ok(InitializedSensor {sensor: self}); 
     }
+
 
     pub fn calibrate<D>(&mut self, delay: &mut D) -> Result<SensorStatus, Error<E>>
         where D:  DelayMs<u16> + DelayUs<u16>,
@@ -115,6 +102,7 @@ where I2C: i2c::Read<Error = E> + i2c::Write<Error = E>,
         }
         return Err(Error::Internal);
     }
+
 
     pub fn read_status(&mut self) -> Result<SensorStatus, Error<E>>
     {
@@ -312,11 +300,13 @@ mod sensor_test {
 
         let expectations = [
             I2cTransaction::write(
+                SENSOR_ADDR, vec![Command::InitSensor as u8]),
+            I2cTransaction::write(
                 SENSOR_ADDR, vec![Command::ReadStatus as u8]),
             I2cTransaction::read(
                 SENSOR_ADDR, not_calibrated.clone()),
             I2cTransaction::write(
-                SENSOR_ADDR, vec![Command::InitSensor as u8]),
+                SENSOR_ADDR, vec![Command::Calibrate as u8, 0x08, 0x00]),
             I2cTransaction::write(
                 SENSOR_ADDR, vec![Command::ReadStatus as u8]),
             I2cTransaction::read(
