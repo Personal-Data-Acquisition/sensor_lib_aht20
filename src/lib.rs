@@ -22,6 +22,9 @@ use crate::sensor_status::{
 mod commands;
 use crate::commands::Command;
 
+mod data;
+use data::SensorData;
+
 
 /// AHT20 Sensor Address
 pub const SENSOR_ADDR: u8 = 0b0011_1000; // = 0x38
@@ -149,16 +152,18 @@ where I2C: i2c::Read<Error = E> + i2c::Write<Error = E>,
         self.get_status()?;
 
 
-        //trigger a messurement.
-        let rbuf = [0u8; 7];
-        self.sensor.i2c.write(self.sensor.address, &rbuf)
+        //The datasheet calls the 0x33 & 0x00 bytes parameters of it.
+        //Doesn't really say or explain anything else about it.
+        let wbuf = vec![Command::TrigMessure as u8, 0x33, 0x00];
+        self.sensor.i2c.write(self.sensor.address, &wbuf)
             .map_err(Error::I2C)?;
 
         //wait for the messurement.
         delay.delay_ms(BUSY_DELAY_MS);
 
-        //timeout if takes too long.
-        
+        //read sensor
+        let rbuf = [0u8; 7];
+
         Ok(rbuf)
     }
 
@@ -375,17 +380,35 @@ mod initialized_sensor_tests {
     fn read_sensor()
     {        
         //prepare 7-Bytes of data.
+        //Byte 0: State,
+        //Byte 1: Humid 0
+        //Byte 2: Humid 1
+        //Byte 3: Humid 2
+        //Byte 4: Temp 0
+        //Byte 5: Temp 1
         let sensor_reading = vec![0u8; 7];
-        
         
         let busy_status = vec![BitMasks::Busy as u8];
         let not_busy_status = vec![0x00];
 
+        /*
+         * Transactions:
+         * START_MESSUREMENT
+         * Tx: 0x70
+         * Tx: 0xAC
+         * Tx: 0x33
+         * Tx: 0x00
+         * 
+         * CHECK FOR DONE:
+         *
+         */
         let expected = [
-            I2cTransaction::write(SENSOR_ADDR, vec!(commands::TRIG_MESSURE)),
-            I2cTransaction::write(SENSOR_ADDR, vec!(commands::READ_STATUS)),
+            I2cTransaction::write(SENSOR_ADDR, vec![commands::READ_STATUS]),
+            I2cTransaction::read(SENSOR_ADDR, not_busy_status.clone()),
+            I2cTransaction::write(SENSOR_ADDR, vec![commands::TRIG_MESSURE, 0x33, 0x00]),
+            I2cTransaction::write(SENSOR_ADDR, vec![commands::READ_STATUS]),
             I2cTransaction::read(SENSOR_ADDR, busy_status),
-            I2cTransaction::write(SENSOR_ADDR, vec!(commands::READ_STATUS)),
+            I2cTransaction::write(SENSOR_ADDR, vec![commands::READ_STATUS]),
             I2cTransaction::read(SENSOR_ADDR, not_busy_status),
             I2cTransaction::read(SENSOR_ADDR, sensor_reading),
         ];
