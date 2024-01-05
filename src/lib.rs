@@ -378,7 +378,17 @@ mod initialized_sensor_tests {
 
     #[test]
     fn read_sensor()
-    {        
+    {
+        /*
+         * Test list:
+         * -reads status
+         * -ensures not busy
+         * -triggers messurement
+         * -waits till measurrement done
+         * -reads all data.
+         * -checks for errors
+         * -returns data.
+         */
         //prepare 7-Bytes of data.
         //Byte 0: State,
         //Byte 1: Humid 0
