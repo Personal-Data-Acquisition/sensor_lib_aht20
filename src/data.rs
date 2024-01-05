@@ -31,4 +31,19 @@ mod sensor_data_tests {
     fn selftest() {
         assert!(false);
     }
+
+    #[test]
+    fn crc() {
+        assert!(false);
+    }
+
+    #[test]
+    fn crc_check() {
+        assert!(false);
+    }
+
+    #[test]
+    fn clear_bytes() {
+        assert!(false);
+    }
 }
