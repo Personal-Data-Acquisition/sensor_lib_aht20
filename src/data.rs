@@ -18,7 +18,9 @@ impl SensorData {
     }
 
     pub fn clear_bytes(&mut self) {
-
+        for v in self.bytes.iter_mut() {
+            *v = 0x00 as u8;
+        }
     }
 
 }
@@ -29,7 +31,7 @@ mod sensor_data_tests {
 
     #[test]
     fn selftest() {
-        assert!(false);
+        assert!(true);
     }
 
     #[test]
@@ -44,6 +46,13 @@ mod sensor_data_tests {
 
     #[test]
     fn clear_bytes() {
-        assert!(false);
+        let mut s = SensorData { bytes: [0u8; 6], crc: 0 };
+        s.bytes[0] = 0xFF;
+        
+        s.clear_bytes();
+
+        for v in s.bytes.iter() {
+            assert_eq!(*v, 0x00 as u8);
+        }
     }
 }
