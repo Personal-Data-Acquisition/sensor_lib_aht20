@@ -3,18 +3,23 @@
  * Description: modules for holding data from the sensor.
  */
 
+const INITAL_CRC_VAL: u8 = 0xFF;
+
 pub struct SensorData {
     bytes: [u8; 6],
     crc: u16,
 }
 
 impl SensorData {
-    pub fn check_crc(&mut self) {
+    pub fn is_crc_good(&mut self) {
         
     }
 
-    pub fn crc(&mut self) {
-
+    pub fn crc8(&mut self) -> u8 {
+        //according to the datasheet, after 6bytes the next(7th) byte will
+        //be the crc check data.
+        //let mut inital_val: u8 = INITAL_CRC_VAL; 
+        return 0x00;
     }
 
     pub fn clear_bytes(&mut self) {
@@ -35,12 +40,21 @@ mod sensor_data_tests {
     }
 
     #[test]
-    fn crc() {
-        assert!(false);
+    fn crc8() 
+    {
+        //polynomial: 0b1000_0111 = 0x87
+        let polynomial: u16 = 0x00;
+        polynomial |= 0x87;
+
+        let mut s = SensorData { bytes: [0u8; 6], crc: 0 };
+        let checksum: u8 = s.crc8();
+        assert_eq!(0x00, checksum);
     }
 
     #[test]
-    fn crc_check() {
+    fn is_crc_good() {
+        //function should return a result type, along with errors,
+        //otherwise unit type wrapped in ok()
         assert!(false);
     }
 
@@ -56,3 +70,4 @@ mod sensor_data_tests {
         }
     }
 }
+
