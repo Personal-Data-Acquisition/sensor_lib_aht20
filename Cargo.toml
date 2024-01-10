@@ -13,9 +13,11 @@ license = "BSD-3-Clause"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-embedded-hal = "1.0.0"
-
+embedded-hal = "1.0.0-rc.3"
 
 # Suff that only get's included for examples, tests and benchmarks
 [dev-dependencies]
 embedded-hal-mock = { version = "0.10.0-rc.4", features = ["eh1"] }
+
+#[patch.crates-io]
+#embedded-hal = { git = "https://github.com/rust-embedded/embedded-hal", features = ["eh1"]}
