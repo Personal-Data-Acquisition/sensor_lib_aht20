@@ -4,11 +4,10 @@
 #[macro_use]
 extern crate alloc;
 
-use embedded_hal::blocking::{
-    i2c,
-    delay::DelayMs,
-    delay::DelayUs,
-};
+
+use embedded_hal::i2c;
+use embedded_hal::delay::DelayNs;
+
 
 //Import the module with the Sensor status functions/struct
 mod sensor_status;
