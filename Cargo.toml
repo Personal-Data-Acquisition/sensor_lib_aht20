@@ -7,7 +7,7 @@ categories = ["embedded", "hardware-support", "no-std", "embedded-hal"]
 description = "A driver for the AHT20 sensor modules."
 readme = "README.md"
 keywords = ["embedded-hal-driver", "sensor", "temprature", "humidity", "aht20"]
-license = "BSD-3-new"
+license = "BSD-3-Clause"
 #repository = "https://"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
