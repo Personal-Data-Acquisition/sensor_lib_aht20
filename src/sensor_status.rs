@@ -49,7 +49,7 @@ mod test_bitmaks {
 
 #[allow(dead_code)]
 pub struct SensorStatus {
-    status: u8,
+    pub status: u8,
 }
 
 #[allow(dead_code)]
