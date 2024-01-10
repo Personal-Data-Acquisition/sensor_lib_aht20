@@ -22,16 +22,17 @@ mod commands;
 use crate::commands::Command;
 
 mod data;
+#[allow(unused_imports)]
 use data::SensorData;
 
 
 /// AHT20 Sensor Address
 pub const SENSOR_ADDR: u8 = 0b0011_1000; // = 0x38
 
-pub const STARTUP_DELAY_MS: u16 = 40;
-pub const BUSY_DELAY_MS: u16 = 20;
-pub const CALIBRATE_DELAY_MS: u16 = 10;
-pub const MAX_STATUS_CHECK_ATTEMPTS: u16 = 3;
+pub const STARTUP_DELAY_MS: u32 = 40;
+pub const BUSY_DELAY_MS: u32 = 20;
+pub const CALIBRATE_DELAY_MS: u32 = 10;
+pub const MAX_STATUS_CHECK_ATTEMPTS: u32 = 3;
 
 
 //Impliment Error type for our driver.
@@ -47,7 +48,7 @@ pub enum Error<E> {
 
 #[allow(dead_code)]
 pub struct Sensor<I2C>
-where I2C: i2c::Read + i2c::Write,
+where I2C: i2c::I2c
 {
     i2c: I2C,
     address: u8,
@@ -57,7 +58,8 @@ where I2C: i2c::Read + i2c::Write,
 //Impliment functions for the sensor that require the embedded-hal
 //I2C.
 impl<E, I2C> Sensor<I2C>
-where I2C: i2c::Read<Error = E> + i2c::Write<Error = E>,
+where I2C: i2c::I2c<Error = E>
+//where I2C: i2c::Read<Error = E> + i2c::Write<Error = E>,
 {
 
     //We're implimenting a new function to return an instance of the sensor
@@ -69,7 +71,7 @@ where I2C: i2c::Read<Error = E> + i2c::Write<Error = E>,
 
     pub fn init(
         &mut self,
-        delay: &mut (impl DelayUs<u16> + DelayMs<u16>),
+        delay: &mut impl DelayNs,
         ) -> Result<InitializedSensor<I2C>, Error<E>>
     {
         //we need a startup delay according to the datasheet.
@@ -88,7 +90,7 @@ where I2C: i2c::Read<Error = E> + i2c::Write<Error = E>,
 
 
     pub fn calibrate<D>(&mut self, delay: &mut D) -> Result<SensorStatus, Error<E>>
-        where D:  DelayMs<u16> + DelayUs<u16>,
+        where D:  DelayNs,
     {
         let wbuf = vec![Command::Calibrate as u8, 0x08, 0x00];
         self.i2c.write(self.address, &wbuf)
@@ -128,7 +130,7 @@ where I2C: i2c::Read<Error = E> + i2c::Write<Error = E>,
 //has been initialized; enforcing correct method availbility.
 #[allow(dead_code)]
 pub struct InitializedSensor<'a, I2C>
-where I2C: i2c::Read + i2c::Write,
+where I2C: i2c::I2c
 {
     sensor: &'a mut Sensor<I2C>,
 }
@@ -136,7 +138,8 @@ where I2C: i2c::Read + i2c::Write,
 
 
 impl <'a, E, I2C> InitializedSensor<'a, I2C>
-where I2C: i2c::Read<Error = E> + i2c::Write<Error = E>,
+where I2C: i2c::I2c<Error = E>
+//where I2C: i2c::Read<Error = E> + i2c::Write<Error = E>,
 {
     pub fn get_status(&mut self) -> Result<SensorStatus, Error<E> >{ 
         let s = self.sensor.read_status()?;
@@ -145,7 +148,7 @@ where I2C: i2c::Read<Error = E> + i2c::Write<Error = E>,
 
     pub fn read_sensor(
         &mut self,
-        delay: &mut (impl DelayUs<u16> + DelayMs<u16>),
+        delay: &mut impl DelayNs,
         ) -> Result< [u8; 7], Error<E>> {
         //check to make sure the sensor isn't busy.
         self.get_status()?;
@@ -175,15 +178,15 @@ mod sensor_test {
     use embedded_hal_mock;
 
     //use embedded_hal::prelude::*;
-    use embedded_hal::blocking::i2c::{Read, Write};
-    
-    use embedded_hal_mock::i2c::{
-        Mock as I2cMock, 
-        Transaction as I2cTransaction
+    use embedded_hal::i2c::I2c;
+   
+    use embedded_hal_mock::eh1::i2c::{
+        Mock as I2cMock,
+        Transaction as I2cTransaction,
     };
     
     //use embedded_hal_mock::timer;
-    use embedded_hal_mock::delay;
+    use embedded_hal_mock::eh1::delay;
 
     use super::*;
 
@@ -254,7 +257,7 @@ mod sensor_test {
         let mut sensor_instance = Sensor::new(i2c, SENSOR_ADDR);
 
 
-        let mut mock_delay = delay::MockNoop;
+        let mut mock_delay = delay::NoopDelay;
         let mut results = sensor_instance.calibrate(&mut mock_delay);
         assert!(results.is_err());
 
@@ -321,7 +324,7 @@ mod sensor_test {
 
         let mut sensor_instance = Sensor::new(i2c, SENSOR_ADDR);
 
-        let mut mock_delay = delay::MockNoop;
+        let mut mock_delay = delay::NoopDelay;
         let initialized_sensor_instance = sensor_instance.init(&mut mock_delay);
         
         assert!(initialized_sensor_instance.is_ok());
@@ -366,12 +369,12 @@ mod sensor_test {
 mod initialized_sensor_tests {
     use embedded_hal_mock;
 
-    use embedded_hal_mock::i2c::{
+    use embedded_hal_mock::eh1::i2c::{
         Mock as I2cMock, 
         Transaction as I2cTransaction
     };
     
-    use embedded_hal_mock::delay;
+    use embedded_hal_mock::eh1::delay;
 
     use super::*;
 
@@ -429,7 +432,7 @@ mod initialized_sensor_tests {
             sensor: &mut sensor_instance
         }; 
         
-        let mut mock_delay = delay::MockNoop;
+        let mut mock_delay = delay::NoopDelay;
         let data = inited_sensor.read_sensor(&mut mock_delay);
         
         assert!(data.is_ok());
