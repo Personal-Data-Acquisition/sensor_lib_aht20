@@ -57,19 +57,18 @@ impl SensorData {
     }
 
     pub fn is_crc_good(&mut self) -> bool{
-        //self.crc = self.bytes[self.bytes.len() - 1];
-        self.crc = self.bytes[6];
-        if self.crc == self.crc_8_maxim() {
-            return true;
-        }
-        return false;
+        let calulated_crc: u8 = self.crc_8_maxim();
+        self.crc == calulated_crc
     }
 
     pub fn crc_8_maxim(&mut self) -> u8{
 
         let mut crc: u16 = INITAL_CRC_VAL as u16;
         let mut index: u16;
-        
+      
+        //save the crc value given to us
+        self.crc = self.bytes[6];
+
         //we loop thorugh the bytes of data and XOR them to calculate the 
         //index into the lookup table.
         for b in 0..(self.bytes.len() - 1) {
@@ -98,8 +97,8 @@ mod sensor_data_tests {
 
     fn setup() -> SensorData 
     {
-        let bytes_of_data: [u8; 7] = [1, 2, 3, 4, 5, 6, 0];
-        let s = SensorData { bytes: bytes_of_data, crc: 0 };
+        let bytes_of_data: [u8; 7] = [1, 2, 3, 4, 5, 6, 0xD6];
+        let s = SensorData { bytes: bytes_of_data, crc: 0x00 };
         return s;
     }
 
@@ -124,12 +123,11 @@ mod sensor_data_tests {
     }
 
     #[test]
-    fn is_crc_good() {
+    fn is_crc_good_t() {
         let mut s = setup();
-        s.bytes[6] = 0xD6;
         assert!(s.is_crc_good());
 
-        s.bytes[6] = 0xF1;
+        s.bytes[6] = 0xD7;
         assert!(!s.is_crc_good());
     }
 

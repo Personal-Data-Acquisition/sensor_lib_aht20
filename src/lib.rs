@@ -394,7 +394,7 @@ mod initialized_sensor_tests {
             sensor_status::BitMasks::CalEnabled as u8,
             0x00, 0x00, 0xff, //Humid values
             0x00, 0xAA, //Temp values
-            0x89,   //CRC8-MAXIM value
+            0xF4,   //CRC8-MAXIM value
         ];
 
         
@@ -423,10 +423,14 @@ mod initialized_sensor_tests {
         assert!(data.is_ok());
 
         let mut sd = data.unwrap();
-        let b = sd.is_crc_good();
-        assert_eq!(sd.bytes[6], 0x89);
-        assert_eq!(sd.bytes[6], 0x89);
-        assert!(b);
+
+        assert!(sd.is_crc_good());
+        assert_eq!(sd.bytes[6], 0xF4);
+        assert_eq!(sd.crc, 0xF4);
+        
+        assert_eq!(sd.bytes[6], sd.crc);
+        assert!(sd.crc == sd.bytes[6]);
+        
 
         inited_sensor.sensor.i2c.done();
     }
