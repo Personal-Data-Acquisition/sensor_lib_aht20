@@ -47,6 +47,15 @@ pub struct SensorData {
 
 #[allow(dead_code)]
 impl SensorData {
+    pub fn new() ->SensorData {
+        let s = SensorData {
+            bytes: [0u8; 6],
+            crc: 0x00,
+        };
+
+        return s;
+    }
+
     pub fn is_crc_good(&mut self) -> bool{
         self.crc == self.crc_8_maxim()    
     }
@@ -87,6 +96,13 @@ mod sensor_data_tests {
         let bytes_of_data: [u8; 6] = [1, 2, 3, 4, 5, 6];
         let s = SensorData { bytes: bytes_of_data, crc: 0 };
         return s;
+    }
+
+    #[test]
+    fn new_instance()
+    {
+        let _s = SensorData::new();
+        assert!(true);
     }
 
     #[test]
