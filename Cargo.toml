@@ -1,5 +1,5 @@
 [package]
-name = "aht20"
+name = "sensor_lib_aht20"
 version = "0.1.0"
 authors = ["Jake Goodwin <jakegoodwin@gorge.works>"]
 edition = "2021"
