@@ -392,12 +392,13 @@ mod initialized_sensor_tests {
          * -returns data.
          */
         //prepare 7-Bytes of data.
-        //Byte 0: State,
-        //Byte 1: Humid 0
-        //Byte 2: Humid 1
-        //Byte 3: Humid 2
-        //Byte 4: Temp 0
-        //Byte 5: Temp 1
+        //Byte 1: State,
+        //Byte 2: Humid 0
+        //Byte 3: Humid 1
+        //Byte 4: Humid 2
+        //Byte 5: Temp 0
+        //Byte 6: Temp 1
+        //Byte 7: CRC
         let sensor_reading = vec![0u8; 7];
         
         let busy_status = vec![BitMasks::Busy as u8];
@@ -439,5 +440,10 @@ mod initialized_sensor_tests {
 
         inited_sensor.sensor.i2c.done();
     }
-    
+
+    #[test]
+    fn soft_reset()
+    {
+        assert!(false);
+    }
 }
