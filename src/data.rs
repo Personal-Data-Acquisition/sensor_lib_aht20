@@ -67,8 +67,8 @@ impl SensorData {
         
         //we loop thorugh the bytes of data and XOR them to calculate the 
         //index into the lookup table.
-        for b in self.bytes.iter() {
-            index = crc ^ (*b as u16);
+        for b in 0..(self.bytes.len() - 1) {
+            index = crc ^ (self.bytes[b] as u16);
             crc = ((CRC8_MAXIM_LUT[index as usize] as u16 ^ (crc << 8)) & 0xFF) as u16;
         }
         return crc as u8
