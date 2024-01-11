@@ -438,6 +438,30 @@ mod initialized_sensor_tests {
     #[test]
     fn soft_reset()
     {
+        
+        let not_busy_status = vec![0x00];
+
+        let expected = [
+            I2cTransaction::write(SENSOR_ADDR, vec![commands::READ_STATUS]),
+            I2cTransaction::read(SENSOR_ADDR, not_busy_status.clone()),
+            I2cTransaction::write(SENSOR_ADDR, vec![commands::SOFT_RESET]),
+            I2cTransaction::write(SENSOR_ADDR, vec![commands::READ_STATUS]),
+            I2cTransaction::read(SENSOR_ADDR, not_busy_status.clone()),
+        ];
+
+
+        //Skip doing the INIT of the sensor.
+        let i2c = I2cMock::new(&expected);
+        let mut sensor_instance = Sensor::new(i2c, SENSOR_ADDR);
+        let mut inited_sensor = InitializedSensor {
+            sensor: &mut sensor_instance
+        }; 
+        
+        let mut mock_delay = delay::NoopDelay;
+        
+        let sr = inited_sensor.soft_reset();
+        assert!(sr.is_ok());
+            
         assert!(false);
     }
 }
