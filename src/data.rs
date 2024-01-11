@@ -7,7 +7,6 @@
 
 #[allow(dead_code)]
 const INITAL_CRC_VAL: u8 = 0xFF;
-//const CRC8_POLYNOMIAL: u16 = 0x31; //This is what the manufature listed. 
 
 /*
  * CRC8-MAXIM
