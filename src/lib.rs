@@ -31,6 +31,7 @@ pub const SENSOR_ADDR: u8 = 0b0011_1000; // = 0x38
 
 pub const STARTUP_DELAY_MS: u32 = 40;
 pub const BUSY_DELAY_MS: u32 = 20;
+pub const MESURE_DELAY_MS: u32 = 80;
 pub const CALIBRATE_DELAY_MS: u32 = 10;
 pub const MAX_STATUS_CHECK_ATTEMPTS: u32 = 3;
 
@@ -153,24 +154,23 @@ where I2C: i2c::I2c<Error = E>
     pub fn read_sensor(
         &mut self,
         delay: &mut impl DelayNs,
-        ) -> Result< [u8; 7], Error<E>> {
+        ) -> Result<SensorData, Error<E>> {
         //check to make sure the sensor isn't busy.
         self.get_status()?;
 
 
-        //The datasheet calls the 0x33 & 0x00 bytes parameters of it.
-        //Doesn't really say or explain anything else about it.
-        let wbuf = vec![Command::TrigMessure as u8, 0x33, 0x00];
+        let wbuf = vec![Command::TrigMessure as u8, DATA0, DATA1];
         self.sensor.i2c.write(self.sensor.address, &wbuf)
             .map_err(Error::I2C)?;
 
         //wait for the messurement.
-        delay.delay_ms(BUSY_DELAY_MS);
+        delay.delay_ms(MESURE_DELAY_MS);
 
         //read sensor
-        let rbuf = [0u8; 7];
+        //let rbuf = [0u8; 7];
+        let mut sd = SensorData::new();
 
-        Ok(rbuf)
+        Ok(sd)
     }
 
 }
@@ -360,7 +360,6 @@ mod sensor_test {
        
         let r = inited_sensor.get_status();
 
-        inited_sensor.sensor.i2c.done();
         assert!(r.is_ok());
         assert_eq!(r.unwrap().status, sensor_status[0]);
         inited_sensor.sensor.i2c.done();
@@ -412,7 +411,7 @@ mod initialized_sensor_tests {
         ];
 
         
-        let busy_status = vec![BitMasks::Busy as u8];
+        let _busy_status = vec![BitMasks::Busy as u8];
         let not_busy_status = vec![0x00];
 
         /*
@@ -429,10 +428,10 @@ mod initialized_sensor_tests {
         let expected = [
             I2cTransaction::write(SENSOR_ADDR, vec![commands::READ_STATUS]),
             I2cTransaction::read(SENSOR_ADDR, not_busy_status.clone()),
-            I2cTransaction::write(SENSOR_ADDR, vec![commands::TRIG_MESSURE, 0x33, 0x00]),
+            I2cTransaction::write(SENSOR_ADDR, vec![commands::TRIG_MESSURE, DATA0, DATA1]),
             I2cTransaction::write(SENSOR_ADDR, vec![commands::READ_STATUS]),
-            I2cTransaction::read(SENSOR_ADDR, busy_status),
-            I2cTransaction::write(SENSOR_ADDR, vec![commands::READ_STATUS]),
+            //I2cTransaction::read(SENSOR_ADDR, busy_status),
+            //I2cTransaction::write(SENSOR_ADDR, vec![commands::READ_STATUS]),
             I2cTransaction::read(SENSOR_ADDR, not_busy_status),
             I2cTransaction::read(SENSOR_ADDR, fake_sensor_data),
         ];
