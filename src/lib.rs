@@ -167,8 +167,13 @@ where I2C: i2c::I2c<Error = E>
         delay.delay_ms(MESURE_DELAY_MS);
 
         //read sensor
-        //let rbuf = [0u8; 7];
         let mut sd = SensorData::new();
+        
+        self.get_status()?;
+
+        self.sensor.i2c.read(self.sensor.address, &mut sd.bytes)
+            .map_err(Error::I2C)?;
+
 
         Ok(sd)
     }
@@ -407,7 +412,7 @@ mod initialized_sensor_tests {
             sensor_status::BitMasks::CalEnabled as u8,
             0x00, 0x00, 0xff, //Humid values
             0x00, 0xff, //Temp values
-            0x6D,   //CRC8-MAXIM value
+            0x00, 0x6D,   //CRC8-MAXIM value
         ];
 
         
