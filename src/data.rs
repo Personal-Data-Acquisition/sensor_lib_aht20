@@ -10,9 +10,16 @@ const INITAL_CRC_VAL: u8 = 0xFF;
 //const CRC8_POLYNOMIAL: u16 = 0x31; //This is what the manufature listed. 
 
 /*
+ * CRC8-MAXIM
  * Lookup table for the CRC8 values. This vastly improves the speed of the 
  * checksum process at the expense of taking up memory on the controller.
  *  0x131 = (1<<8)+(1<<5)+(1<<4)+(1<<0) = 0b0000_0001_0001_1001 =aprox= 0x31
+ *
+ *  POLYNOMIAL: 0x31
+ *  INIT VALUE: 0xFF
+ *  FINAL XOR: 0x00
+ *  REFIN: True
+ *  REFOUT: True
  */
 const CRC8_MAXIM_LUT: [u8; 256] = [
 0x00, 0x5E, 0xBC, 0xE2, 0x61, 0x3F, 0xDD, 0x83, 0xC2, 0x9C, 0x7E, 0x20, 0xA3, 0xFD, 0x1F, 0x41,
