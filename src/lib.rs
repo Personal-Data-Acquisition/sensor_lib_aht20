@@ -422,6 +422,9 @@ mod initialized_sensor_tests {
 
         assert!(data.is_ok());
 
+        let mut sd = data.unwrap();
+        assert!(sd.is_crc_good());
+
         inited_sensor.sensor.i2c.done();
     }
 
