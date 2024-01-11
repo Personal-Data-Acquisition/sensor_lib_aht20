@@ -178,6 +178,23 @@ where I2C: i2c::I2c<Error = E>
         Ok(sd)
     }
 
+    pub fn soft_reset(&mut self, delay: &mut impl DelayNs) ->
+        Result<SensorStatus, Error<E>>
+    {
+        
+        let mut status =  self.get_status()?;
+        if status.is_busy() {
+            return Err(Error::UnexpectedBusy);
+        }
+
+        let wbuf = vec![Command::SoftReset as u8];
+        self.sensor.i2c.write(self.sensor.address, &wbuf)
+            .map_err(Error::I2C)?;
+
+        status =  self.get_status()?;
+        return Ok(status);
+    }
+
 }
 
 
@@ -459,9 +476,9 @@ mod initialized_sensor_tests {
         
         let mut mock_delay = delay::NoopDelay;
         
-        let sr = inited_sensor.soft_reset();
+        let sr = inited_sensor.soft_reset(&mut mock_delay);
         assert!(sr.is_ok());
-            
-        assert!(false);
+
+        sensor_instance.i2c.done();
     }
 }
