@@ -83,14 +83,19 @@ mod sensor_data_tests {
         assert!(true);
     }
 
+    fn setup() -> SensorData 
+    {
+        let bytes_of_data: [u8; 6] = [1, 2, 3, 4, 5, 6];
+        let s = SensorData { bytes: bytes_of_data, crc: 0 };
+        return s;
+    }
+
     #[test]
     fn crc_8_maxim() 
     {
-        let bytes_of_data: [u8; 6] = [1, 2, 3, 4, 5, 6];
-        let mut s = SensorData { bytes: bytes_of_data, crc: 0 };
+        let mut s = setup();
         let crc = s.crc_8_maxim();
         assert_eq!(0xD6, crc); 
-
 
         let backwards_bytes_of_data: [u8; 6] = [6, 5, 4, 3, 2, 1];
         s.bytes = backwards_bytes_of_data;
@@ -99,10 +104,9 @@ mod sensor_data_tests {
     }
 
     #[test]
-    fn is_crc_good() {        
-        let bytes_of_data: [u8; 6] = [1, 2, 3, 4, 5, 6];
-        let mut s = SensorData {bytes: bytes_of_data, crc: 0xD6};
-
+    fn is_crc_good() {
+        let mut s = setup();
+        s.crc = 0xD6;
         assert!(s.is_crc_good());
 
         s.crc = 0xD5;
@@ -111,9 +115,7 @@ mod sensor_data_tests {
 
     #[test]
     fn clear_bytes() {
-        let bytes_of_data: [u8; 6] = [1, 2, 3, 4, 5, 6];
-        let mut s = SensorData { bytes: bytes_of_data, crc: 0 };
-        
+        let mut s = setup();        
         s.clear_bytes();
 
         for v in s.bytes.iter() {
