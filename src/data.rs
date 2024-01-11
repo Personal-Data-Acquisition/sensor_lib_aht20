@@ -111,8 +111,8 @@ mod sensor_data_tests {
 
     #[test]
     fn clear_bytes() {
-        let mut s = SensorData { bytes: [0u8; 6], crc: 0 };
-        s.bytes[0] = 0xFF;
+        let bytes_of_data: [u8; 6] = [1, 2, 3, 4, 5, 6];
+        let mut s = SensorData { bytes: bytes_of_data, crc: 0 };
         
         s.clear_bytes();
 
