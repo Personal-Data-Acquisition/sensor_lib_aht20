@@ -41,24 +41,22 @@ pub struct SensorData {
 
 #[allow(dead_code)]
 impl SensorData {
-    pub fn is_crc_good(&mut self) {
-        
+    pub fn is_crc_good(&mut self) -> bool{
+        self.crc == self.crc_8_maxim()    
     }
 
     pub fn crc_8_maxim(&mut self) -> u8{
-        //according to the datasheet, after 6bytes the next(7th) byte will
-        //be the crc check data.
+
         let mut crc: u16 = INITAL_CRC_VAL as u16;
         let mut index: u16;
-
+        
+        //we loop thorugh the bytes of data and XOR them to calculate the 
+        //index into the lookup table.
         for b in self.bytes.iter() {
-            //crc = CRC8_LUT[(self.bytes[b] ^ crc) as usize];
-            //crc = CRC8_MAXIM_LUT[(self.bytes[b] ^ crc) as usize];
             index = crc ^ (*b as u16);
             crc = ((CRC8_MAXIM_LUT[index as usize] as u16 ^ (crc << 8)) & 0xFF) as u16;
         }
         return crc as u8
-        //self.crc = crc;
     }
 
     pub fn clear_bytes(&mut self) {
@@ -94,10 +92,14 @@ mod sensor_data_tests {
     }
 
     #[test]
-    fn is_crc_good() {
-        //function should return a result type, along with errors,
-        //otherwise unit type wrapped in ok()
-        assert!(false);
+    fn is_crc_good() {        
+        let bytes_of_data: [u8; 6] = [1, 2, 3, 4, 5, 6];
+        let mut s = SensorData {bytes: bytes_of_data, crc: 0xD6};
+
+        assert!(s.is_crc_good());
+
+        s.crc = 0xD5;
+        assert!(!s.is_crc_good());
     }
 
     #[test]
