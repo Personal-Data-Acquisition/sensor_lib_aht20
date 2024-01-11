@@ -41,15 +41,15 @@ const CRC8_MAXIM_LUT: [u8; 256] = [
 
 #[allow(dead_code)]
 pub struct SensorData {
-    bytes: [u8; 6],
-    crc: u8,
+    pub bytes: [u8; 8],
+    pub crc: u8,
 }
 
 #[allow(dead_code)]
 impl SensorData {
     pub fn new() ->SensorData {
         let s = SensorData {
-            bytes: [0u8; 6],
+            bytes: [0u8; 8],
             crc: 0x00,
         };
 
@@ -93,7 +93,7 @@ mod sensor_data_tests {
 
     fn setup() -> SensorData 
     {
-        let bytes_of_data: [u8; 6] = [1, 2, 3, 4, 5, 6];
+        let bytes_of_data: [u8; 8] = [1, 2, 3, 4, 5, 6, 0, 0];
         let s = SensorData { bytes: bytes_of_data, crc: 0 };
         return s;
     }
@@ -110,21 +110,21 @@ mod sensor_data_tests {
     {
         let mut s = setup();
         let crc = s.crc_8_maxim();
-        assert_eq!(0xD6, crc); 
+        assert_eq!(0xF2, crc); 
 
-        let backwards_bytes_of_data: [u8; 6] = [6, 5, 4, 3, 2, 1];
+        let backwards_bytes_of_data: [u8; 8] = [6, 5, 4, 3, 2, 1, 5, 1];
         s.bytes = backwards_bytes_of_data;
         let crc = s.crc_8_maxim();
-        assert_eq!(0x13, crc);
+        assert_eq!(0x18, crc);
     }
 
     #[test]
     fn is_crc_good() {
         let mut s = setup();
-        s.crc = 0xD6;
+        s.crc = 0xF2;
         assert!(s.is_crc_good());
 
-        s.crc = 0xD5;
+        s.crc = 0xF1;
         assert!(!s.is_crc_good());
     }
 
