@@ -31,8 +31,13 @@ pub const SENSOR_ADDR: u8 = 0b0011_1000; // = 0x38
 
 pub const STARTUP_DELAY_MS: u32 = 40;
 pub const BUSY_DELAY_MS: u32 = 20;
+pub const MESURE_DELAY_MS: u32 = 80;
 pub const CALIBRATE_DELAY_MS: u32 = 10;
 pub const MAX_STATUS_CHECK_ATTEMPTS: u32 = 3;
+
+// Described by the datasheet as parameters.
+pub const DATA0: u8 = 0x33;
+pub const DATA1: u8 = 0x00;
 
 
 //Impliment Error type for our driver.
@@ -149,24 +154,45 @@ where I2C: i2c::I2c<Error = E>
     pub fn read_sensor(
         &mut self,
         delay: &mut impl DelayNs,
-        ) -> Result< [u8; 7], Error<E>> {
+        ) -> Result<SensorData, Error<E>> {
         //check to make sure the sensor isn't busy.
         self.get_status()?;
 
 
-        //The datasheet calls the 0x33 & 0x00 bytes parameters of it.
-        //Doesn't really say or explain anything else about it.
-        let wbuf = vec![Command::TrigMessure as u8, 0x33, 0x00];
+        let wbuf = vec![Command::TrigMessure as u8, DATA0, DATA1];
         self.sensor.i2c.write(self.sensor.address, &wbuf)
             .map_err(Error::I2C)?;
 
         //wait for the messurement.
-        delay.delay_ms(BUSY_DELAY_MS);
+        delay.delay_ms(MESURE_DELAY_MS);
 
         //read sensor
-        let rbuf = [0u8; 7];
+        let mut sd = SensorData::new();
+        
+        self.get_status()?;
 
-        Ok(rbuf)
+        self.sensor.i2c.read(self.sensor.address, &mut sd.bytes)
+            .map_err(Error::I2C)?;
+
+
+        Ok(sd)
+    }
+
+    pub fn soft_reset(&mut self, delay: &mut impl DelayNs) ->
+        Result<SensorStatus, Error<E>>
+    {
+        
+        let mut status =  self.get_status()?;
+        if status.is_busy() {
+            return Err(Error::UnexpectedBusy);
+        }
+
+        let wbuf = vec![Command::SoftReset as u8];
+        self.sensor.i2c.write(self.sensor.address, &wbuf)
+            .map_err(Error::I2C)?;
+
+        status =  self.get_status()?;
+        return Ok(status);
     }
 
 }
@@ -356,7 +382,6 @@ mod sensor_test {
        
         let r = inited_sensor.get_status();
 
-        inited_sensor.sensor.i2c.done();
         assert!(r.is_ok());
         assert_eq!(r.unwrap().status, sensor_status[0]);
         inited_sensor.sensor.i2c.done();
@@ -381,48 +406,25 @@ mod initialized_sensor_tests {
     #[test]
     fn read_sensor()
     {
-        /*
-         * Test list:
-         * -reads status
-         * -ensures not busy
-         * -triggers messurement
-         * -waits till measurrement done
-         * -reads all data.
-         * -checks for errors
-         * -returns data.
-         */
-        //prepare 7-Bytes of data.
-        //Byte 0: State,
-        //Byte 1: Humid 0
-        //Byte 2: Humid 1
-        //Byte 3: Humid 2
-        //Byte 4: Temp 0
-        //Byte 5: Temp 1
-        let sensor_reading = vec![0u8; 7];
+       
+        let fake_sensor_data = vec![
+            sensor_status::BitMasks::CalEnabled as u8,
+            0x00, 0x00, 0xff, //Humid values
+            0x00, 0xAA, //Temp values
+            0xF4,   //CRC8-MAXIM value
+        ];
+
         
-        let busy_status = vec![BitMasks::Busy as u8];
+        let _busy_status = vec![BitMasks::Busy as u8];
         let not_busy_status = vec![0x00];
 
-        /*
-         * Transactions:
-         * START_MESSUREMENT
-         * Tx: 0x70
-         * Tx: 0xAC
-         * Tx: 0x33
-         * Tx: 0x00
-         * 
-         * CHECK FOR DONE:
-         *
-         */
         let expected = [
             I2cTransaction::write(SENSOR_ADDR, vec![commands::READ_STATUS]),
             I2cTransaction::read(SENSOR_ADDR, not_busy_status.clone()),
-            I2cTransaction::write(SENSOR_ADDR, vec![commands::TRIG_MESSURE, 0x33, 0x00]),
-            I2cTransaction::write(SENSOR_ADDR, vec![commands::READ_STATUS]),
-            I2cTransaction::read(SENSOR_ADDR, busy_status),
+            I2cTransaction::write(SENSOR_ADDR, vec![commands::TRIG_MESSURE, DATA0, DATA1]),
             I2cTransaction::write(SENSOR_ADDR, vec![commands::READ_STATUS]),
             I2cTransaction::read(SENSOR_ADDR, not_busy_status),
-            I2cTransaction::read(SENSOR_ADDR, sensor_reading),
+            I2cTransaction::read(SENSOR_ADDR, fake_sensor_data),
         ];
 
         //Skip doing the INIT of the sensor.
@@ -434,10 +436,49 @@ mod initialized_sensor_tests {
         
         let mut mock_delay = delay::NoopDelay;
         let data = inited_sensor.read_sensor(&mut mock_delay);
-        
+
         assert!(data.is_ok());
+
+        let mut sd = data.unwrap();
+
+        assert!(sd.is_crc_good());
+        assert_eq!(sd.bytes[6], 0xF4);
+        assert_eq!(sd.crc, 0xF4);
+        
+        assert_eq!(sd.bytes[6], sd.crc);
+        assert!(sd.crc == sd.bytes[6]);
+        
 
         inited_sensor.sensor.i2c.done();
     }
-    
+
+    #[test]
+    fn soft_reset()
+    {
+        
+        let not_busy_status = vec![0x00];
+
+        let expected = [
+            I2cTransaction::write(SENSOR_ADDR, vec![commands::READ_STATUS]),
+            I2cTransaction::read(SENSOR_ADDR, not_busy_status.clone()),
+            I2cTransaction::write(SENSOR_ADDR, vec![commands::SOFT_RESET]),
+            I2cTransaction::write(SENSOR_ADDR, vec![commands::READ_STATUS]),
+            I2cTransaction::read(SENSOR_ADDR, not_busy_status.clone()),
+        ];
+
+
+        //Skip doing the INIT of the sensor.
+        let i2c = I2cMock::new(&expected);
+        let mut sensor_instance = Sensor::new(i2c, SENSOR_ADDR);
+        let mut inited_sensor = InitializedSensor {
+            sensor: &mut sensor_instance
+        }; 
+        
+        let mut mock_delay = delay::NoopDelay;
+        
+        let sr = inited_sensor.soft_reset(&mut mock_delay);
+        assert!(sr.is_ok());
+
+        sensor_instance.i2c.done();
+    }
 }

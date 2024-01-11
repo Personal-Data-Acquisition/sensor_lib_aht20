@@ -14,8 +14,19 @@ other data sheets with varying formatting and info.
 There seems to be some translation mistakes in the data sheets from what I can
 tell so I've made some assumptions where needed.
 
+**CRC stuff**
+One version of the datasheet seems to describe a 8bit CRC check being used
+for the readings that come  from the sensor.
+
+The polynomial described is `0x31` and an initial value of `0xFF`. This sounds
+like the `CRC-8-MAXIM`. So that is what this driver uses.
+
 
 ## Running tests
+
+This assumes you are not in the midst of using this repo as a git-submodule.
+If you are then you may need to specify the target for your development 
+machine using the `rustup target list` command to find the correct target.
 
 ```sh
 cargo test
@@ -24,5 +35,17 @@ cargo test
 
 ## Usage
 
+
+
 ## Overview
 
+
+## TODO:
+
+- [x] Upgrade to newest embedded-hal/mock
+- [x] Setup CRC8 for i2c
+- [x] Build out the methods to read sensor data.
+- [ ] Add documentation for recomendations of i2c reliability.
+- [ ] Impliment generic standard for sensor info/formatting.
+- [ ] Reduce the size of the lib.rs file.
+- [ ] Look into making the driver non-blocking.

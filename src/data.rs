@@ -41,25 +41,38 @@ const CRC8_MAXIM_LUT: [u8; 256] = [
 
 #[allow(dead_code)]
 pub struct SensorData {
-    bytes: [u8; 6],
-    crc: u8,
+    pub bytes: [u8; 7],
+    pub crc: u8,
 }
 
 #[allow(dead_code)]
 impl SensorData {
+    pub fn new() ->SensorData {
+        let s = SensorData {
+            bytes: [0u8; 7],
+            crc: 0x00,
+        };
+
+        return s;
+    }
+
     pub fn is_crc_good(&mut self) -> bool{
-        self.crc == self.crc_8_maxim()    
+        let calulated_crc: u8 = self.crc_8_maxim();
+        self.crc == calulated_crc
     }
 
     pub fn crc_8_maxim(&mut self) -> u8{
 
         let mut crc: u16 = INITAL_CRC_VAL as u16;
         let mut index: u16;
-        
+      
+        //save the crc value given to us
+        self.crc = self.bytes[6];
+
         //we loop thorugh the bytes of data and XOR them to calculate the 
         //index into the lookup table.
-        for b in self.bytes.iter() {
-            index = crc ^ (*b as u16);
+        for b in 0..(self.bytes.len() - 1) {
+            index = crc ^ (self.bytes[b] as u16);
             crc = ((CRC8_MAXIM_LUT[index as usize] as u16 ^ (crc << 8)) & 0xFF) as u16;
         }
         return crc as u8
@@ -84,9 +97,16 @@ mod sensor_data_tests {
 
     fn setup() -> SensorData 
     {
-        let bytes_of_data: [u8; 6] = [1, 2, 3, 4, 5, 6];
-        let s = SensorData { bytes: bytes_of_data, crc: 0 };
+        let bytes_of_data: [u8; 7] = [1, 2, 3, 4, 5, 6, 0xD6];
+        let s = SensorData { bytes: bytes_of_data, crc: 0x00 };
         return s;
+    }
+
+    #[test]
+    fn new_instance()
+    {
+        let _s = SensorData::new();
+        assert!(true);
     }
 
     #[test]
@@ -96,19 +116,18 @@ mod sensor_data_tests {
         let crc = s.crc_8_maxim();
         assert_eq!(0xD6, crc); 
 
-        let backwards_bytes_of_data: [u8; 6] = [6, 5, 4, 3, 2, 1];
+        let backwards_bytes_of_data: [u8; 7] = [6, 5, 4, 3, 2, 1, 5];
         s.bytes = backwards_bytes_of_data;
         let crc = s.crc_8_maxim();
         assert_eq!(0x13, crc);
     }
 
     #[test]
-    fn is_crc_good() {
+    fn is_crc_good_t() {
         let mut s = setup();
-        s.crc = 0xD6;
         assert!(s.is_crc_good());
 
-        s.crc = 0xD5;
+        s.bytes[6] = 0xD7;
         assert!(!s.is_crc_good());
     }
 
