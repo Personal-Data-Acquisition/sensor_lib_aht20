@@ -34,6 +34,10 @@ pub const BUSY_DELAY_MS: u32 = 20;
 pub const CALIBRATE_DELAY_MS: u32 = 10;
 pub const MAX_STATUS_CHECK_ATTEMPTS: u32 = 3;
 
+// Described by the datasheet as parameters.
+pub const DATA0: u8 = 0x33;
+pub const DATA1: u8 = 0x00;
+
 
 //Impliment Error type for our driver.
 #[derive(Debug, PartialEq)]
@@ -399,7 +403,14 @@ mod initialized_sensor_tests {
         //Byte 5: Temp 0
         //Byte 6: Temp 1
         //Byte 7: CRC
-        let sensor_reading = vec![0u8; 7];
+        
+        let fake_sensor_data = vec![
+            sensor_status::BitMasks::CalEnabled as u8,
+            0x00, 0x00, 0xff, //Humid values
+            0x00, 0xff, //Temp values
+            0x6D,   //CRC8-MAXIM value
+        ];
+
         
         let busy_status = vec![BitMasks::Busy as u8];
         let not_busy_status = vec![0x00];
@@ -423,7 +434,7 @@ mod initialized_sensor_tests {
             I2cTransaction::read(SENSOR_ADDR, busy_status),
             I2cTransaction::write(SENSOR_ADDR, vec![commands::READ_STATUS]),
             I2cTransaction::read(SENSOR_ADDR, not_busy_status),
-            I2cTransaction::read(SENSOR_ADDR, sensor_reading),
+            I2cTransaction::read(SENSOR_ADDR, fake_sensor_data),
         ];
 
         //Skip doing the INIT of the sensor.
