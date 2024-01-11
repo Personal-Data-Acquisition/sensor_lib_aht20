@@ -57,7 +57,12 @@ impl SensorData {
     }
 
     pub fn is_crc_good(&mut self) -> bool{
-        self.crc == self.crc_8_maxim()    
+        //self.crc = self.bytes[self.bytes.len() - 1];
+        self.crc = self.bytes[6];
+        if self.crc == self.crc_8_maxim() {
+            return true;
+        }
+        return false;
     }
 
     pub fn crc_8_maxim(&mut self) -> u8{
@@ -121,10 +126,10 @@ mod sensor_data_tests {
     #[test]
     fn is_crc_good() {
         let mut s = setup();
-        s.crc = 0xD6;
+        s.bytes[6] = 0xD6;
         assert!(s.is_crc_good());
 
-        s.crc = 0xF1;
+        s.bytes[6] = 0xF1;
         assert!(!s.is_crc_good());
     }
 
