@@ -389,54 +389,23 @@ mod initialized_sensor_tests {
     #[test]
     fn read_sensor()
     {
-        /*
-         * Test list:
-         * -reads status
-         * -ensures not busy
-         * -triggers messurement
-         * -waits till measurrement done
-         * -reads all data.
-         * -checks for errors
-         * -returns data.
-         */
-        //prepare 7-Bytes of data.
-        //Byte 1: State,
-        //Byte 2: Humid 0
-        //Byte 3: Humid 1
-        //Byte 4: Humid 2
-        //Byte 5: Temp 0
-        //Byte 6: Temp 1
-        //Byte 7: CRC
-        
+       
         let fake_sensor_data = vec![
             sensor_status::BitMasks::CalEnabled as u8,
             0x00, 0x00, 0xff, //Humid values
-            0x00, 0xff, //Temp values
-            0x00, 0x6D,   //CRC8-MAXIM value
+            0x00, 0xAA, //Temp values
+            0x89,   //CRC8-MAXIM value
         ];
 
         
         let _busy_status = vec![BitMasks::Busy as u8];
         let not_busy_status = vec![0x00];
 
-        /*
-         * Transactions:
-         * START_MESSUREMENT
-         * Tx: 0x70
-         * Tx: 0xAC
-         * Tx: 0x33
-         * Tx: 0x00
-         * 
-         * CHECK FOR DONE:
-         *
-         */
         let expected = [
             I2cTransaction::write(SENSOR_ADDR, vec![commands::READ_STATUS]),
             I2cTransaction::read(SENSOR_ADDR, not_busy_status.clone()),
             I2cTransaction::write(SENSOR_ADDR, vec![commands::TRIG_MESSURE, DATA0, DATA1]),
             I2cTransaction::write(SENSOR_ADDR, vec![commands::READ_STATUS]),
-            //I2cTransaction::read(SENSOR_ADDR, busy_status),
-            //I2cTransaction::write(SENSOR_ADDR, vec![commands::READ_STATUS]),
             I2cTransaction::read(SENSOR_ADDR, not_busy_status),
             I2cTransaction::read(SENSOR_ADDR, fake_sensor_data),
         ];
@@ -450,7 +419,7 @@ mod initialized_sensor_tests {
         
         let mut mock_delay = delay::NoopDelay;
         let data = inited_sensor.read_sensor(&mut mock_delay);
-        
+
         assert!(data.is_ok());
 
         inited_sensor.sensor.i2c.done();
