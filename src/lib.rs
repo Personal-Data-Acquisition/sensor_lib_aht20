@@ -1,4 +1,5 @@
-#![no_std]
+//#![no_std]
+#![cfg_attr(not(test), no_std)]
 
 #[allow(unused_imports)]
 #[macro_use]
