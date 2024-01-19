@@ -19,6 +19,33 @@ pub enum BitMasks {
     CalEnabled = (1 << 3),
 }
 
+#[allow(dead_code)]
+pub struct SensorStatus {
+    pub status: u8,
+}
+
+#[allow(dead_code)]
+impl SensorStatus{
+    pub fn new(status: u8) -> SensorStatus {
+        SensorStatus{ status }  
+    }
+
+    pub fn is_busy(&self) -> bool {
+        if self.status & BitMasks::Busy as u8 > 0 {
+            return true;
+        }
+        return false;
+    }
+
+    pub fn is_calibration_enabled(&self) -> bool {
+        if self.status & BitMasks::CalEnabled as u8 > 0 {
+            return true
+        }
+        return false 
+    }
+}
+
+
 #[cfg(test)]
 mod test_bitmaks {
     use super::*;
@@ -47,31 +74,19 @@ mod test_bitmaks {
     }
 }
 
-#[allow(dead_code)]
-pub struct SensorStatus {
-    pub status: u8,
-}
 
-#[allow(dead_code)]
-impl SensorStatus{
-    pub fn is_busy(&self) -> bool {
-        if self.status & BitMasks::Busy as u8 > 0 {
-            return true;
-        }
-        return false;
-    }
-
-    pub fn is_calibration_enabled(&self) -> bool {
-        if self.status & BitMasks::CalEnabled as u8 > 0 {
-            return true
-        }
-        return false 
-    }
-}
 
 #[cfg(test)]
 mod sensor_status_tests {
     use super::*;
+    
+    #[test]
+    fn new_status() {
+        let s = SensorStatus::new(0x18);
+
+        assert_eq!(s.status, 0x18);
+        assert!(!s.is_busy());
+    }
 
     #[test]
     fn busy_status() {

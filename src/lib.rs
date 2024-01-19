@@ -179,7 +179,7 @@ where I2C: i2c::Read<Error = E> + i2c::Write<Error = E>,
 
         //Limits the number of times it tries to get status
         for attempt in 0..MAX_ATTEMPTS{
-            //read sensor
+            
             self.sensor.i2c.read(self.sensor.address, &mut sd.bytes)
                 .map_err(Error::I2C)?;
 
