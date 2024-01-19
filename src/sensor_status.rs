@@ -8,16 +8,29 @@
  * bit[2:0]: Reserved
 */
 
+const NORMODE_VALUE: u8 = 0;
+const CYCMODE_VALUE: u8 = 32;
+const CMDMODE_VALUE: u8 = 64;
+
+
+pub const BUSY_BM: u8 = 1<<7;
+pub const NORMODE_BM: u8 = (1<<6)|(1<<5);
+pub const CYCMODE_BM: u8 = (1<<6)|(1<<5);
+pub const CMDMODE_BM: u8 = 1<<6;
+pub const CALENABLED_BM: u8 = 1<<3;
+
 //This means it's a primitive enum representation; aka uint8_t
 #[repr(u8)]
 #[allow(dead_code)]
 pub enum BitMasks {
     Busy = (1 << 7),
     NorMode = (1 << 6) | (1<<5), 
-    CycMode = ((0 << 6) |( 1 << 5)),
+    CycMode = (0 << 6) | (1 << 5),
     CmdMode = (1 << 6),
     CalEnabled = (1 << 3),
 }
+
+
 
 #[allow(dead_code)]
 pub struct SensorStatus {
@@ -45,9 +58,12 @@ impl SensorStatus{
     }
 
     pub fn is_normal_mode(&self) -> bool {
-        (self.status & BitMasks::NorMode as u8) == 0
+        (self.status & NORMODE_BM) == NORMODE_VALUE
     }
 
+    pub fn is_cyc_mode(&self) -> bool {
+        (self.status & CYCMODE_BM) == CYCMODE_VALUE 
+    }
 }
 
 
@@ -130,8 +146,18 @@ mod sensor_status_tests {
         let mut s = SensorStatus::new(0x18);
         assert!(s.is_normal_mode());
 
-        s.status = s.status | (1<<6); //Hex: 0x58, BIN: 88
+        s.status = s.status | (1<<6); //Hex: 0x58, DEC: 88
         assert!(!s.is_normal_mode());
+    }
+
+    #[test]
+    fn cyc_mode_status() {
+        //0x18 is the status the sensor returns most the time.
+        let mut s = SensorStatus::new(0x18);
+        assert!(!s.is_cyc_mode());
+
+        s.status = s.status | (1<<5); //Hex: 0x38, DEC: 56 
+        assert!(s.is_cyc_mode());
     }
 }
 
