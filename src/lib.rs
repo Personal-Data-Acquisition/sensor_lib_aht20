@@ -195,6 +195,11 @@ where I2C: i2c::Read<Error = E> + i2c::Write<Error = E>,
         self.sensor.i2c.read(self.sensor.address, &mut sd.bytes)
             .map_err(Error::I2C)?;
 
+        //if the sensor data gives us 0xFF for the CRC try to read it again.
+        if sd.bytes[6] == 0xFF {
+            self.sensor.i2c.read(self.sensor.address, &mut sd.bytes)
+                .map_err(Error::I2C)?;
+        }
         //check against the CRC?
         Ok(sd)
     }
@@ -476,6 +481,7 @@ mod initialized_sensor_tests {
             I2cTransaction::read(SENSOR_ADDR, busy_status.clone()),
             I2cTransaction::write(SENSOR_ADDR, vec![commands::READ_STATUS]),
             I2cTransaction::read(SENSOR_ADDR, not_busy_status.clone()),
+            I2cTransaction::read(SENSOR_ADDR, fake_sensor_data.clone()),
             I2cTransaction::read(SENSOR_ADDR, ready_fake_sensor_data),
         ];
 
