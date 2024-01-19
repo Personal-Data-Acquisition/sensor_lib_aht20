@@ -13,7 +13,7 @@
 #[allow(dead_code)]
 pub enum BitMasks {
     Busy = (1 << 7),
-    NorMode = ((0 << 6) |( 0 << 5)),
+    NorMode = (1 << 6) | (1<<5), 
     CycMode = ((0 << 6) |( 1 << 5)),
     CmdMode = (1 << 6),
     CalEnabled = (1 << 3),
@@ -43,6 +43,11 @@ impl SensorStatus{
         }
         return false 
     }
+
+    pub fn is_normal_mode(&self) -> bool {
+        (self.status & BitMasks::NorMode as u8) == 0
+    }
+
 }
 
 
@@ -57,7 +62,7 @@ mod test_bitmaks {
     
     #[test]
     fn check_modes() {
-        assert_eq!(BitMasks::NorMode as u8, 0);
+        assert_eq!(BitMasks::NorMode as u8, 96);
         assert_eq!(BitMasks::CycMode as u8, 32);
         assert_eq!(BitMasks::CmdMode as u8, 64);
 
@@ -117,6 +122,16 @@ mod sensor_status_tests {
 
         senstat.status |= BitMasks::Busy as u8;
         assert!(senstat.is_calibration_enabled());
+    }
+
+    #[test]
+    fn normal_mode_status() {
+        //0x18 is the status the sensor returns most the time.
+        let mut s = SensorStatus::new(0x18);
+        assert!(s.is_normal_mode());
+
+        s.status = s.status | (1<<6); //Hex: 0x58, BIN: 88
+        assert!(!s.is_normal_mode());
     }
 }
 
