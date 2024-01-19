@@ -159,32 +159,30 @@ where I2C: i2c::Read<Error = E> + i2c::Write<Error = E>,
         //check to make sure the sensor isn't busy.
         self.get_status()?;
 
-
-        let wbuf = vec![Command::TrigMessure as u8, DATA0, DATA1];
-        self.sensor.i2c.write(self.sensor.address, &wbuf)
-            .map_err(Error::I2C)?;
-
-        //wait for the messurement.
-        delay.delay_ms(MESURE_DELAY_MS);
-
-        //read sensor
-        let mut sd = SensorData::new();
-        
-        self.get_status()?;
-
         for _i in 0..MAX_CRC_RETRIES {
+            let wbuf = vec![Command::TrigMessure as u8, DATA0, DATA1];
+            self.sensor.i2c.write(self.sensor.address, &wbuf)
+                .map_err(Error::I2C)?;
+
+            //wait for the messurement.
+            delay.delay_ms(MESURE_DELAY_MS);
+
+            //read sensor
+            let mut sd = SensorData::new();
+            
+            self.get_status()?;
+
             self.sensor.i2c.read(self.sensor.address, &mut sd.bytes)
                 .map_err(Error::I2C)?;
             if sd.bytes[sd.bytes.len() - 1] == 0xFF {
                 delay.delay_ms(BUSY_DELAY_MS);
             }
             else {
-                break;
+                return Ok(sd);
             }
 
         }
-
-        Ok(sd)
+        Err(Error::DeviceTimeOut)
     }
 
     pub fn soft_reset(&mut self, _delay: &mut impl DelayMs<u16>) ->
@@ -437,8 +435,11 @@ mod initialized_sensor_tests {
             I2cTransaction::read(SENSOR_ADDR, not_busy_status.clone()),
             I2cTransaction::write(SENSOR_ADDR, vec![commands::TRIG_MESSURE, DATA0, DATA1]),
             I2cTransaction::write(SENSOR_ADDR, vec![commands::READ_STATUS]),
-            I2cTransaction::read(SENSOR_ADDR, not_busy_status),
+            I2cTransaction::read(SENSOR_ADDR, not_busy_status.clone()),
             I2cTransaction::read(SENSOR_ADDR, fake_sensor_data),
+            I2cTransaction::write(SENSOR_ADDR, vec![commands::TRIG_MESSURE, DATA0, DATA1]),
+            I2cTransaction::write(SENSOR_ADDR, vec![commands::READ_STATUS]),
+            I2cTransaction::read(SENSOR_ADDR, not_busy_status),
             I2cTransaction::read(SENSOR_ADDR, ready_fake_sensor_data),
         ];
 
