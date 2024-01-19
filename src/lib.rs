@@ -36,7 +36,7 @@ pub const BUSY_DELAY_MS: u16 = 20;
 pub const MESURE_DELAY_MS: u16 = 80;
 pub const CALIBRATE_DELAY_MS: u16 = 10;
 pub const MAX_STATUS_CHECK_ATTEMPTS: u16 = 3;
-pub const MAX_CRC_RETRIES: u16 = 3;
+pub const MAX_CRC_RETRIES: u16 = 6;
 
 // Described by the datasheet as parameters.
 pub const DATA0: u8 = 0x33;
