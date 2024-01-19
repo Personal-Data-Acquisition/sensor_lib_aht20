@@ -1,6 +1,6 @@
 [package]
 name = "sensor_lib_aht20"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Jake Goodwin <jakegoodwin@gorge.works>"]
 edition = "2021"
 categories = ["embedded", "hardware-support", "no-std", "embedded-hal"]
@@ -11,13 +11,13 @@ license = "BSD-3-Clause"
 #repository = "https://"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
+# This should be correct
 [dependencies]
-embedded-hal = "1.0.0-rc.3"
+embedded-hal = "0.2.7"
 
 # Suff that only get's included for examples, tests and benchmarks
 [dev-dependencies]
-embedded-hal-mock = { version = "0.10.0-rc.4", features = ["eh1"] }
+embedded-hal-mock = "0.9.0"
 
 #[patch.crates-io]
 #embedded-hal = { git = "https://github.com/rust-embedded/embedded-hal", features = ["eh1"]}
