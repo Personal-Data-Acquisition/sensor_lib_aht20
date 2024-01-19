@@ -1,4 +1,3 @@
-//#![no_std]
 #![cfg_attr(not(test), no_std)]
 
 #[allow(unused_imports)]
@@ -35,8 +34,7 @@ pub const STARTUP_DELAY_MS: u16 = 40;
 pub const BUSY_DELAY_MS: u16 = 20;
 pub const MEASURE_DELAY_MS: u16 = 80;
 pub const CALIBRATE_DELAY_MS: u16 = 10;
-pub const MAX_STATUS_CHECK_ATTEMPTS: u16 = 3;
-pub const MAX_CRC_RETRIES: u16 = 6;
+
 pub const MAX_ATTEMPTS: usize = 3;
 
 // Described by the datasheet as parameters.
@@ -220,18 +218,11 @@ where I2C: i2c::Read<Error = E> + i2c::Write<Error = E>,
 
 #[cfg(test)]
 mod sensor_test {
-    //use embedded_hal_mock;
-
     use embedded_hal::prelude::*;
-
-    use embedded_hal_mock::i2c;
     use embedded_hal_mock::i2c::{
         Mock as I2cMock,
         Transaction as I2cTransaction,
     };
-    
-    use embedded_hal_mock::timer;
-
     use super::*;
 
     #[test]
@@ -417,8 +408,6 @@ mod initialized_sensor_tests {
         Transaction as I2cTransaction
     };
     
-    use embedded_hal_mock::delay;
-
     use super::*;
     
     #[test]
