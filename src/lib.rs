@@ -450,24 +450,27 @@ mod initialized_sensor_tests {
     fn read_sensor()
     {
 
-        let busy_status = BitMasks::CalEnabled as u8 | BitMasks::Busy as u8;
-        let not_busy_status = BitMasks::CalEnabled as u8;
+        let busy_status = BitMasks::CalEnabled as u8 | 
+            BitMasks::Busy as u8 |
+            0x10;
+
+        let not_busy_status = BitMasks::CalEnabled as u8 | 0x10;
 
         let fake_sensor_data = vec![
             busy_status,
-            0x00, 0x00, //Humid values
-            0xff,   //split byte
-            0x00, 0xAA, //Temp values
-            0xF4,   //CRC8-MAXIM, still calulating value
+            0x7E, 0x51, //Humid values
+            0x65,   //split byte 
+            0xD4, 0xA0, //Temp values
+            0xDA,   //CRC8-MAXIM, calulated by sensor 
         ];
 
 
         let ready_fake_sensor_data = vec![
             not_busy_status,
-            0x00, 0x00, //Humid values
-            0xff,   //split byte 
-            0x00, 0xAA, //Temp values
-            0xF4,   //CRC8-MAXIM, calulated by sensor 
+            0x7E, 0x51, //Humid values
+            0x65,   //split byte 
+            0xD4, 0xA0, //Temp values
+            0xDA,   //CRC8-MAXIM, calulated by sensor 
         ];
         
 
@@ -490,14 +493,13 @@ mod initialized_sensor_tests {
         assert!(data.is_ok());
 
         let mut sd = data.unwrap();
-
+       
+        assert_eq!(sd.bytes[0], 0x18);
+        assert_eq!(sd.bytes[6], 0xDA);
         assert!(sd.is_crc_good());
-        assert_eq!(sd.bytes[6], 0xF4);
-        assert_eq!(sd.crc, 0xF4);
-        
+        assert_eq!(sd.crc, 0xDA);       
         assert_eq!(sd.bytes[6], sd.crc);
-        assert!(sd.crc == sd.bytes[6]);
-        
+ 
 
         inited_sensor.sensor.i2c.done();
     }
