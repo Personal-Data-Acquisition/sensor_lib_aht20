@@ -20,19 +20,6 @@ pub const CYCMODE_BM: u8 = (1<<6)|(1<<5);
 pub const CMDMODE_BM: u8 = 1<<6;
 pub const CALENABLED_BM: u8 = 1<<3;
 
-//This means it's a primitive enum representation; aka uint8_t
-#[repr(u8)]
-#[allow(dead_code)]
-pub enum BitMasks {
-    Busy = (1 << 7),
-    NorMode = (1 << 6) | (1<<5), 
-    CycMode = (0 << 6) | (1 << 5),
-    CmdMode = (1 << 6),
-    CalEnabled = (1 << 3),
-}
-
-
-
 #[allow(dead_code)]
 pub struct SensorStatus {
     pub status: u8,
@@ -65,37 +52,6 @@ impl SensorStatus{
     }
 }
 
-
-#[cfg(test)]
-mod test_bitmaks {
-    use super::*;
-
-    #[test]
-    fn check_busy() {
-        assert_eq!(BitMasks::Busy as u8, 128);
-    }
-    
-    #[test]
-    fn check_modes() {
-        assert_eq!(BitMasks::NorMode as u8, 96);
-        assert_eq!(BitMasks::CycMode as u8, 32);
-        assert_eq!(BitMasks::CmdMode as u8, 64);
-
-    }
-
-    #[test]
-    fn check_combined() {
-
-        assert_eq!(
-                BitMasks::CmdMode as u8 |
-                BitMasks::Busy as u8,
-                128 + 64
-            );
-    }
-}
-
-
-
 #[cfg(test)]
 mod sensor_status_tests {
     use super::*;
@@ -116,10 +72,10 @@ mod sensor_status_tests {
         assert!(!senstat.is_busy());
 
         //set the busy bit.
-        senstat.status |= BitMasks::Busy as u8;
+        senstat.status |= BUSY_BM;
         assert!(senstat.is_busy());
 
-        senstat.status |= BitMasks::CalEnabled as u8;
+        senstat.status |= CALENABLED_BM; 
         assert!(senstat.is_busy());
     }
 
@@ -132,10 +88,10 @@ mod sensor_status_tests {
         assert!(!senstat.is_calibration_enabled());
 
         //set the calibration bit
-        senstat.status |= BitMasks::CalEnabled as u8;
+        senstat.status |= CALENABLED_BM;
         assert!(senstat.is_calibration_enabled());
 
-        senstat.status |= BitMasks::Busy as u8;
+        senstat.status |= BUSY_BM;
         assert!(senstat.is_calibration_enabled());
     }
 
@@ -168,4 +124,3 @@ mod sensor_status_tests {
         assert!(s.is_cmd_mode());
     }
 }
-
