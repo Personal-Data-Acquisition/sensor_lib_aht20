@@ -36,6 +36,7 @@ pub const BUSY_DELAY_MS: u16 = 20;
 pub const MESURE_DELAY_MS: u16 = 80;
 pub const CALIBRATE_DELAY_MS: u16 = 10;
 pub const MAX_STATUS_CHECK_ATTEMPTS: u16 = 3;
+pub const MAX_CRC_RETRIES: u16 = 3;
 
 // Described by the datasheet as parameters.
 pub const DATA0: u8 = 0x33;
@@ -171,9 +172,17 @@ where I2C: i2c::Read<Error = E> + i2c::Write<Error = E>,
         
         self.get_status()?;
 
-        self.sensor.i2c.read(self.sensor.address, &mut sd.bytes)
-            .map_err(Error::I2C)?;
+        for _i in 0..MAX_CRC_RETRIES {
+            self.sensor.i2c.read(self.sensor.address, &mut sd.bytes)
+                .map_err(Error::I2C)?;
+            if sd.bytes[sd.bytes.len() - 1] == 0xFF {
+                delay.delay_ms(BUSY_DELAY_MS);
+            }
+            else {
+                break;
+            }
 
+        }
 
         Ok(sd)
     }
