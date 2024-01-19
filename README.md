@@ -50,3 +50,8 @@ cargo test
 - [ ] Impliment generic standard for sensor info/formatting.
 - [ ] Reduce the size of the lib.rs file.
 - [ ] Look into making the driver non-blocking.
+
+
+
+
+
