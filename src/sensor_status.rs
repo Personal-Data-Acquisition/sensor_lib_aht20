@@ -8,10 +8,11 @@
  * bit[2:0]: Reserved
 */
 
+const BUSY_VALUE: u8 = 128;
 const NORMODE_VALUE: u8 = 0;
 const CYCMODE_VALUE: u8 = 32;
 const CMDMODE_VALUE: u8 = 64;
-
+const CALENABLED_VAL: u8 = 8;
 
 pub const BUSY_BM: u8 = 1<<7;
 pub const NORMODE_BM: u8 = (1<<6)|(1<<5);
@@ -44,17 +45,11 @@ impl SensorStatus{
     }
 
     pub fn is_busy(&self) -> bool {
-        if self.status & BitMasks::Busy as u8 > 0 {
-            return true;
-        }
-        return false;
+        (self.status & BUSY_BM) == BUSY_VALUE
     }
 
     pub fn is_calibration_enabled(&self) -> bool {
-        if self.status & BitMasks::CalEnabled as u8 > 0 {
-            return true
-        }
-        return false 
+        (self.status & CALENABLED_BM) == CALENABLED_VAL 
     }
 
     pub fn is_normal_mode(&self) -> bool {
@@ -63,6 +58,10 @@ impl SensorStatus{
 
     pub fn is_cyc_mode(&self) -> bool {
         (self.status & CYCMODE_BM) == CYCMODE_VALUE 
+    }
+
+    pub fn is_cmd_mode(&self) -> bool {
+        (self.status & CMDMODE_BM) == CMDMODE_VALUE 
     }
 }
 
@@ -158,6 +157,15 @@ mod sensor_status_tests {
 
         s.status = s.status | (1<<5); //Hex: 0x38, DEC: 56 
         assert!(s.is_cyc_mode());
+    }
+
+    #[test]
+    fn cmd_mode_status() {
+        let mut s = SensorStatus::new(0x18);
+        assert!(!s.is_cmd_mode());
+
+        s.status = s.status | (1<<6); //Hex: 0x58, DEC: 88
+        assert!(s.is_cmd_mode());
     }
 }
 
