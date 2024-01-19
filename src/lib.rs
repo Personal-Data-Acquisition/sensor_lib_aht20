@@ -13,10 +13,7 @@ use embedded_hal::blocking::{
 //Import the module with the Sensor status functions/struct
 mod sensor_status;
 #[allow(unused_imports)]
-use crate::sensor_status::{
-    SensorStatus, 
-    BitMasks
-};
+use crate::sensor_status::SensorStatus;
 
 //Import the sensor's availble i2c commands and variables
 mod commands;
@@ -183,7 +180,7 @@ where I2C: i2c::Read<Error = E> + i2c::Write<Error = E>,
             self.sensor.i2c.read(self.sensor.address, &mut sd.bytes)
                 .map_err(Error::I2C)?;
 
-            if BitMasks::Busy as u8 & sd.bytes[0] == 0 {
+            if sensor_status::BUSY_BM as u8 & sd.bytes[0] == 0 {
                 break;
             }
             else if attempt == MAX_ATTEMPTS {
@@ -282,10 +279,10 @@ mod sensor_test {
         let expectations = [
             I2cTransaction::write(SENSOR_ADDR, vec![Command::Calibrate as u8, 0x08, 0x00]),
             I2cTransaction::write(SENSOR_ADDR, vec![Command::ReadStatus as u8]),
-            I2cTransaction::read(SENSOR_ADDR, vec![BitMasks::Busy as u8]),
+            I2cTransaction::read(SENSOR_ADDR, vec![sensor_status::BUSY_BM as u8]),
             I2cTransaction::write(SENSOR_ADDR, vec![Command::Calibrate as u8, 0x08, 0x00]),
             I2cTransaction::write(SENSOR_ADDR, vec![Command::ReadStatus as u8]),
-            I2cTransaction::read(SENSOR_ADDR, vec![BitMasks::CalEnabled as u8]),
+            I2cTransaction::read(SENSOR_ADDR, vec![sensor_status::CALENABLED_BM as u8]),
         ]; 
 
         let i2c = I2cMock::new(&expectations);
@@ -305,7 +302,7 @@ mod sensor_test {
     #[test]
     fn get_status_busy()
     {
-        let busy_status: u8 = BitMasks::Busy as u8;
+        let busy_status: u8 = sensor_status::BUSY_BM as u8;
 
         let expectations = [
             I2cTransaction::write(
@@ -333,7 +330,7 @@ mod sensor_test {
     {
 
         let calibrated = vec![
-           (BitMasks::CalEnabled as u8)
+           (sensor_status::CALENABLED_BM as u8)
         ];
         assert_eq!(calibrated[0], 0b0000_1000);
 
@@ -373,8 +370,8 @@ mod sensor_test {
     {
         let wbuf = vec![Command::ReadStatus as u8];
         let sensor_status= vec![
-            BitMasks::CmdMode as u8 | 
-            BitMasks::CalEnabled as u8
+            sensor_status::CMDMODE_BM as u8 | 
+            sensor_status::CALENABLED_BM as u8
             ];
         
         let expected = [
@@ -439,11 +436,11 @@ mod initialized_sensor_tests {
     fn read_sensor()
     {
 
-        let busy_status = BitMasks::CalEnabled as u8 | 
-            BitMasks::Busy as u8 |
+        let busy_status = sensor_status::CALENABLED_BM as u8 | 
+            sensor_status::BUSY_BM as u8 |
             0x10;
 
-        let not_busy_status = BitMasks::CalEnabled as u8 | 0x10;
+        let not_busy_status = sensor_status::CALENABLED_BM as u8 | 0x10;
 
         let fake_sensor_data = vec![
             busy_status,
