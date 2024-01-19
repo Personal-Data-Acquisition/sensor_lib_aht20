@@ -176,12 +176,16 @@ where I2C: i2c::Read<Error = E> + i2c::Write<Error = E>,
         self.trigger_measurement()?;
         
         delay.delay_ms(MEASURE_DELAY_MS);
- 
+
+        let mut sd = SensorData::new();
+
         //Limits the number of times it tries to get status
         for attempt in 0..MAX_ATTEMPTS{
-        let s = self.get_status()?;
-        
-            if !s.is_busy() {
+            //read sensor
+            self.sensor.i2c.read(self.sensor.address, &mut sd.bytes)
+                .map_err(Error::I2C)?;
+
+            if BitMasks::Busy as u8 & sd.bytes[0] == 0 {
                 break;
             }
             else if attempt == MAX_ATTEMPTS {
@@ -190,16 +194,6 @@ where I2C: i2c::Read<Error = E> + i2c::Write<Error = E>,
             delay.delay_ms(BUSY_DELAY_MS);
         }
 
-        //read sensor
-        let mut sd = SensorData::new();
-        self.sensor.i2c.read(self.sensor.address, &mut sd.bytes)
-            .map_err(Error::I2C)?;
-
-        //if the sensor data gives us 0xFF for the CRC try to read it again.
-        if sd.bytes[6] == 0xFF {
-            self.sensor.i2c.read(self.sensor.address, &mut sd.bytes)
-                .map_err(Error::I2C)?;
-        }
         //check against the CRC?
         Ok(sd)
     }
@@ -456,32 +450,30 @@ mod initialized_sensor_tests {
     fn read_sensor()
     {
 
+        let busy_status = BitMasks::CalEnabled as u8 | BitMasks::Busy as u8;
+        let not_busy_status = BitMasks::CalEnabled as u8;
+
         let fake_sensor_data = vec![
-            sensor_status::BitMasks::CalEnabled as u8,
-            0x00, 0x00, 0xff, //Humid values
+            busy_status,
+            0x00, 0x00, //Humid values
+            0xff,   //split byte
             0x00, 0xAA, //Temp values
-            0xFF,   //CRC8-MAXIM, still calulating value
+            0xF4,   //CRC8-MAXIM, still calulating value
         ];
 
 
         let ready_fake_sensor_data = vec![
-            sensor_status::BitMasks::CalEnabled as u8,
-            0x00, 0x00, 0xff, //Humid values
+            not_busy_status,
+            0x00, 0x00, //Humid values
+            0xff,   //split byte 
             0x00, 0xAA, //Temp values
             0xF4,   //CRC8-MAXIM, calulated by sensor 
         ];
         
-        let busy_status = vec![BitMasks::Busy as u8];
-        let not_busy_status = vec![0x00];
-
 
         let expected = [
             I2cTransaction::write(SENSOR_ADDR, vec![commands::TRIG_MESSURE, TRIG_MEASURE_PARAM0, TRIG_MEASURE_PARAM1]),
-            I2cTransaction::write(SENSOR_ADDR, vec![commands::READ_STATUS]),
-            I2cTransaction::read(SENSOR_ADDR, busy_status.clone()),
-            I2cTransaction::write(SENSOR_ADDR, vec![commands::READ_STATUS]),
-            I2cTransaction::read(SENSOR_ADDR, not_busy_status.clone()),
-            I2cTransaction::read(SENSOR_ADDR, fake_sensor_data.clone()),
+            I2cTransaction::read(SENSOR_ADDR, fake_sensor_data),
             I2cTransaction::read(SENSOR_ADDR, ready_fake_sensor_data),
         ];
 
