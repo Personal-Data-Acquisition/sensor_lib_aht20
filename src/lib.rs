@@ -407,6 +407,27 @@ mod initialized_sensor_tests {
     use embedded_hal_mock::delay;
 
     use super::*;
+    
+    #[test]
+    fn trigger_messurement() 
+    {
+        let expected = [
+            I2cTransaction::write(SENSOR_ADDR, vec![commands::TRIG_MESSURE]),
+        ];
+        
+        //Skip doing the INIT of the sensor.
+        let i2c = I2cMock::new(&expected);
+        let mut sensor_instance = Sensor::new(i2c, SENSOR_ADDR);
+        let mut inited_sensor = InitializedSensor {
+            sensor: &mut sensor_instance
+        }; 
+        
+        let res = inited_sensor.trigger_messurement();
+        assert!(res.is_ok());
+
+        inited_sensor.sensor.i2c.done();
+
+    }
 
     #[test]
     fn read_sensor()
