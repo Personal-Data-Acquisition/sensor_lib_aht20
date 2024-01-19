@@ -45,6 +45,7 @@ cargo test
 - [x] Upgrade to newest embedded-hal/mock
 - [x] Setup CRC8 for i2c
 - [x] Build out the methods to read sensor data.
+- [ ] Update to poll for finished CRC calculations from sensor.
 - [ ] Add documentation for recomendations of i2c reliability.
 - [ ] Impliment generic standard for sensor info/formatting.
 - [ ] Reduce the size of the lib.rs file.

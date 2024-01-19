@@ -404,14 +404,21 @@ mod initialized_sensor_tests {
     #[test]
     fn read_sensor()
     {
-       
+
         let fake_sensor_data = vec![
             sensor_status::BitMasks::CalEnabled as u8,
             0x00, 0x00, 0xff, //Humid values
             0x00, 0xAA, //Temp values
-            0xF4,   //CRC8-MAXIM value
+            0xFF,   //CRC8-MAXIM, still calulating value
         ];
 
+
+        let ready_fake_sensor_data = vec![
+            sensor_status::BitMasks::CalEnabled as u8,
+            0x00, 0x00, 0xff, //Humid values
+            0x00, 0xAA, //Temp values
+            0xF4,   //CRC8-MAXIM, calulated by sensor 
+        ];
         
         let _busy_status = vec![BitMasks::Busy as u8];
         let not_busy_status = vec![0x00];
@@ -423,6 +430,7 @@ mod initialized_sensor_tests {
             I2cTransaction::write(SENSOR_ADDR, vec![commands::READ_STATUS]),
             I2cTransaction::read(SENSOR_ADDR, not_busy_status),
             I2cTransaction::read(SENSOR_ADDR, fake_sensor_data),
+            I2cTransaction::read(SENSOR_ADDR, ready_fake_sensor_data),
         ];
 
         //Skip doing the INIT of the sensor.
