@@ -1,3 +1,18 @@
+//! AHT2X I2C driver:
+//!
+//! Provides a unit tested driver to access the AHT2X series of sensor modules, 
+//! focuses on:
+//! 
+//! - Providing reliable data.
+//! - A safer interface to an i2c sensor.
+//! - No infinite loops.
+//! - No external dependencies for CRC checksums.
+//! - No assumption of reliable hardware(passes back error messages) 
+//!
+//! To see a full example running on real hardware checkout:
+//! ['stm32_aht20_demo']: <https://github.com/Personal-Data-Acquisition/sensor_lib_aht20>
+//!
+
 #![cfg_attr(not(test), no_std)]
 
 #[allow(unused_imports)]
@@ -15,7 +30,7 @@ mod sensor_status;
 #[allow(unused_imports)]
 use crate::sensor_status::SensorStatus;
 
-//Import the sensor's availble i2c commands and variables
+//Import the sensor's available i2c commands and variables
 mod commands;
 use crate::commands::Command;
 
@@ -27,22 +42,24 @@ use data::SensorData;
 /// AHT20 Sensor Address
 pub const SENSOR_ADDR: u8 = 0b0011_1000; // = 0x38
 
+
+/// Data sheet supplied delay times
 pub const STARTUP_DELAY_MS: u16 = 40;
 pub const BUSY_DELAY_MS: u16 = 20;
 pub const MEASURE_DELAY_MS: u16 = 80;
 pub const CALIBRATE_DELAY_MS: u16 = 10;
 
-//Number of attempts, an abitrary number.
+///Number retry attempts before assuming hardware issues
 pub const MAX_ATTEMPTS: usize = 3;
 
-// Described by the datasheet as parameters.
+/// Described by the data sheet as parameters
 pub const TRIG_MEASURE_PARAM0: u8 = 0x33;
 pub const TRIG_MEASURE_PARAM1: u8 = 0x00;
 pub const CAL_PARAM0: u8 = 0x08;
 pub const CAL_PARAM1: u8 = 0x00;
 
 
-//Impliment Error type for our driver.
+///Impliment Error type for the AHT on i2c
 #[derive(Debug, PartialEq)]
 pub enum Error<E> {
     I2C(E),
@@ -54,6 +71,7 @@ pub enum Error<E> {
 
 
 #[allow(dead_code)]
+/// The uninitialized sensor struct, consumes an i2c instance.
 pub struct Sensor<I2C>
 where I2C: i2c::Read + i2c::Write,
 {
@@ -68,13 +86,17 @@ impl<E, I2C> Sensor<I2C>
 where I2C: i2c::Read<Error = E> + i2c::Write<Error = E>,
 {
 
-    //We're implimenting a new function to return an instance of the sensor
+    ///Returns an instance of the sensor structure.
+    ///It takes an i2c instance and a i2c address as input.
+    ///The address itself is a pub const in the crate but is left as a 
+    ///parameter to allow for alternate usage of the driver.
     pub fn new(i2c: I2C, address: u8) -> Self {
         let buf = [0, 0, 0, 0];
         Sensor{i2c, address, buffer: buf}
     }
 
-
+    ///Initializes the AHT sensor and returns an initialized version or
+    ///encapsulated sensor that gives access to more methods.
     pub fn init(
         &mut self,
         delay: &mut impl DelayMs<u16>,
@@ -94,7 +116,7 @@ where I2C: i2c::Read<Error = E> + i2c::Write<Error = E>,
         return Ok(InitializedSensor {sensor: self}); 
     }
 
-
+    ///Called the the Init function, Shouldn't be needed most the time.
     pub fn calibrate<D>(&mut self, delay: &mut D) -> Result<SensorStatus, Error<E>>
         where D:  DelayMs<u16>,
     {
@@ -114,7 +136,7 @@ where I2C: i2c::Read<Error = E> + i2c::Write<Error = E>,
         return Err(Error::Internal);
     }
 
-
+    ///Reads the status byte of the AHT sensor.
     pub fn read_status(&mut self) -> Result<SensorStatus, Error<E>>
     {
         self.i2c 
@@ -135,9 +157,8 @@ where I2C: i2c::Read<Error = E> + i2c::Write<Error = E>,
 }
 
 
-//This stucture encapsulates the Sensor structure after the sensor
-//has been initialized; enforcing correct method availbility.
 #[allow(dead_code)]
+/// The initialized sensor struct, enforces correct method availability.
 pub struct InitializedSensor<'a, I2C>
 where I2C: i2c::Read + i2c::Write,
 {
@@ -149,11 +170,15 @@ where I2C: i2c::Read + i2c::Write,
 impl <'a, E, I2C> InitializedSensor<'a, I2C>
 where I2C: i2c::Read<Error = E> + i2c::Write<Error = E>,
 {
+    ///Returns SensorStatus as a structure with methods to abstract the
+    ///needed bitwise operations.
     pub fn get_status(&mut self) -> Result<SensorStatus, Error<E> >{ 
         let s = self.sensor.read_status()?;
         Ok(s)
     }
-    
+   
+    ///Sends the special three byte sequence to the AHT sensor in order to 
+    ///start the measurement proscess.
     pub fn trigger_measurement(&mut self) -> Result<(), Error<E>> 
     {
         let wbuf = vec![Command::TrigMessure as u8,
@@ -166,7 +191,14 @@ where I2C: i2c::Read<Error = E> + i2c::Write<Error = E>,
         Ok(())
     }
 
-
+    /// # Attempts to read the 7 needed bytes of data.
+    /// - Byte 0 --> sensor state/status.
+    /// - Byte 1 --> Humid data
+    /// - Byte 2 --> Humid data
+    /// - Byte 3 --> 4bits Humid data + 4bits Temp data.
+    /// - Byte 4 --> Temp data
+    /// - Byte 5 --> Temp data
+    /// - Byte 6 --> CRC value
     pub fn read_sensor(
         &mut self,
         delay: &mut impl DelayMs<u16>,
@@ -198,6 +230,7 @@ where I2C: i2c::Read<Error = E> + i2c::Write<Error = E>,
         Ok(sd)
     }
 
+    /// Preforms a soft reset of the sensor itself.
     pub fn soft_reset(&mut self, _delay: &mut impl DelayMs<u16>) ->
         Result<SensorStatus, Error<E>>
     {
