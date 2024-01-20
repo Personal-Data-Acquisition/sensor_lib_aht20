@@ -32,6 +32,7 @@ pub const BUSY_DELAY_MS: u16 = 20;
 pub const MEASURE_DELAY_MS: u16 = 80;
 pub const CALIBRATE_DELAY_MS: u16 = 10;
 
+//Number of attempts, an abitrary number.
 pub const MAX_ATTEMPTS: usize = 3;
 
 // Described by the datasheet as parameters.
@@ -281,10 +282,10 @@ mod sensor_test {
     fn calibrate()
     {
         let expectations = [
-            I2cTransaction::write(SENSOR_ADDR, vec![Command::Calibrate as u8, 0x08, 0x00]),
+            I2cTransaction::write(SENSOR_ADDR, vec![Command::Calibrate as u8, CAL_PARAM0, CAL_PARAM1]),
             I2cTransaction::write(SENSOR_ADDR, vec![Command::ReadStatus as u8]),
             I2cTransaction::read(SENSOR_ADDR, vec![sensor_status::BUSY_BM as u8]),
-            I2cTransaction::write(SENSOR_ADDR, vec![Command::Calibrate as u8, 0x08, 0x00]),
+            I2cTransaction::write(SENSOR_ADDR, vec![Command::Calibrate as u8, CAL_PARAM0, CAL_PARAM1]),
             I2cTransaction::write(SENSOR_ADDR, vec![Command::ReadStatus as u8]),
             I2cTransaction::read(SENSOR_ADDR, vec![sensor_status::CALENABLED_BM as u8]),
         ]; 
@@ -349,7 +350,7 @@ mod sensor_test {
             I2cTransaction::read(
                 SENSOR_ADDR, not_calibrated.clone()),
             I2cTransaction::write(
-                SENSOR_ADDR, vec![Command::Calibrate as u8, 0x08, 0x00]),
+                SENSOR_ADDR, vec![Command::Calibrate as u8, CAL_PARAM0, CAL_PARAM1]),
             I2cTransaction::write(
                 SENSOR_ADDR, vec![Command::ReadStatus as u8]),
             I2cTransaction::read(
