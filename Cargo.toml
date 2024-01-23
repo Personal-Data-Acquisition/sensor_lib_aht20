@@ -1,6 +1,6 @@
 [package]
 name = "sensor_lib_aht20"
-version = "0.1.2"
+version = "0.1.3"
 authors = ["Jake Goodwin <jakegoodwin@gorge.works>"]
 edition = "2021"
 categories = ["embedded", "hardware-support", "no-std", "embedded-hal"]

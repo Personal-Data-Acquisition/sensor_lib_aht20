@@ -10,7 +10,51 @@
 //! - No assumption of reliable hardware(passes back error messages) 
 //!
 //! To see a full example running on real hardware checkout:
-//! ['stm32_aht20_demo']: <https://github.com/Personal-Data-Acquisition/sensor_lib_aht20>
+//! ['stm32_aht20_demo'](https://github.com/jake-g00dwin/aht20_rust_demo)
+//!
+//!
+//!```rust,ignore
+//!use sensor_lib_aht20 as aht20;
+//!
+//!
+//!#[entry]
+//!fn main() -> ! {
+//!    init_heap();
+//!    rtt_init_print!();
+//!
+//!    //These lines are only for arm cortex_m uC 
+//!    let cp = cortex_m::Peripherals::take().unwrap();
+//!    let dp = pac::Peripherals::take().unwrap();
+//!     
+//!     /*--SNIP--*/
+//!
+//!    let mut sensor_instance = aht20::Sensor::new(i2c, aht20::SENSOR_ADDR);
+//!
+//!    let mut inited_sensor = sensor_instance.init(&mut delay).unwrap();
+//!
+//!    //Get sensor_data --> `sd`
+//!    let mut sd = inited_sensor.read_sensor(&mut delay).unwrap();
+//!     
+//!    //Check the CRC8 value for a single measurement.
+//!    if sd.is_crc_good() {
+//!        rprintln!("CRC valid!");
+//!    } else {
+//!        rprintln!("CRC invalid!");
+//!    }
+//!
+//!    //Continuously print out the measurements using RTT.
+//!    loop {
+//!         rprintln!("Humidity: {}, Temp(C): {}", 
+//!         sd.calculate_humidity(), 
+//!         sd.calculate_temperature()
+//!         );
+//!         delay.delay_ms(1000 as u16);
+//!         sd = inited_sensor.read_sensor(&mut delay).unwrap();
+//!    }
+//!}
+//!```
+//! The above example leaves out the actual configuration of the i2c peripheral
+//! as it's more of a uC/platform specific item.
 //!
 
 #![cfg_attr(not(test), no_std)]
@@ -25,25 +69,21 @@ use embedded_hal::blocking::{
     delay::DelayMs,
 };
 
-//Import the module with the Sensor status functions/struct
 mod sensor_status;
 #[allow(unused_imports)]
-use crate::sensor_status::SensorStatus;
+pub use crate::sensor_status::SensorStatus;
 
-//Import the sensor's available i2c commands and variables
 mod commands;
-use crate::commands::Command;
+pub use crate::commands::Command;
 
 mod data;
 #[allow(unused_imports)]
-use data::SensorData;
+pub use data::SensorData;
 
 
 /// AHT20 Sensor Address
 pub const SENSOR_ADDR: u8 = 0b0011_1000; // = 0x38
 
-
-/// Data sheet supplied delay times
 pub const STARTUP_DELAY_MS: u16 = 40;
 pub const BUSY_DELAY_MS: u16 = 20;
 pub const MEASURE_DELAY_MS: u16 = 80;
@@ -52,10 +92,14 @@ pub const CALIBRATE_DELAY_MS: u16 = 10;
 ///Number retry attempts before assuming hardware issues
 pub const MAX_ATTEMPTS: usize = 3;
 
-/// Described by the data sheet as parameters
+/// Trig Measure Parameter 0(unknown) 
 pub const TRIG_MEASURE_PARAM0: u8 = 0x33;
+/// Trig Measure Parameter 1(unknown) 
 pub const TRIG_MEASURE_PARAM1: u8 = 0x00;
+
+/// Calibration Paramter 0(unknown)
 pub const CAL_PARAM0: u8 = 0x08;
+/// Calibration Paramter 1(unknown)
 pub const CAL_PARAM1: u8 = 0x00;
 
 
@@ -72,6 +116,7 @@ pub enum Error<E> {
 
 #[allow(dead_code)]
 /// The uninitialized sensor struct, consumes an i2c instance.
+/// The fields of it are all privite as you shouldn't access them directly.
 pub struct Sensor<I2C>
 where I2C: i2c::Read + i2c::Write,
 {
@@ -116,7 +161,8 @@ where I2C: i2c::Read<Error = E> + i2c::Write<Error = E>,
         return Ok(InitializedSensor {sensor: self}); 
     }
 
-    ///Called the the Init function, Shouldn't be needed most the time.
+    ///Called by the the Init function, Shouldn't be needed most the time.
+    ///You can call this function manually if the sensor itself had lost power.
     pub fn calibrate<D>(&mut self, delay: &mut D) -> Result<SensorStatus, Error<E>>
         where D:  DelayMs<u16>,
     {
@@ -136,7 +182,8 @@ where I2C: i2c::Read<Error = E> + i2c::Write<Error = E>,
         return Err(Error::Internal);
     }
 
-    ///Reads the status byte of the AHT sensor.
+    ///Reads the status byte of the AHT sensor and returns either an Error
+    ///or the SensorStatus structure.
     pub fn read_status(&mut self) -> Result<SensorStatus, Error<E>>
     {
         self.i2c 

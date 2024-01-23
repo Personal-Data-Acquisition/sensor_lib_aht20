@@ -42,6 +42,8 @@ const CRC8_MAXIM_LUT: [u8; 256] = [
 0x82, 0xB3, 0xE0, 0xD1, 0x46, 0x77, 0x24, 0x15, 0x3B, 0x0A, 0x59, 0x68, 0xFF, 0xCE, 0x9D, 0xAC,
 ];
 
+
+///Impliments the CRC checks, as well as sensor bitwise operations.
 #[allow(dead_code)]
 pub struct SensorData {
     pub bytes: [u8; 7],
@@ -59,6 +61,8 @@ impl SensorData {
         return s;
     }
 
+    ///Uses the crc_8_maxim on the CRC byte and returns true if the calculated
+    ///and received CRC bytes match.
     pub fn is_crc_good(&mut self) -> bool{
         self.crc_8_maxim();
         self.crc == self.bytes[CRC_INDEX] 
@@ -84,6 +88,8 @@ impl SensorData {
         }
     }
 
+    ///Gets the first 20bits of a 3 byte sequence, and typecasts it into
+    ///a unsigned 32 bit integer.
     pub fn get_humidity_bits(&self) -> u32 {
         let mut h: u32 = (self.bytes[1] as u32) << 12;
         h |= (self.bytes[2] as u32) << 4;
@@ -91,6 +97,8 @@ impl SensorData {
         return h
     }
 
+    ///Gets the last 20bits of a 3 byte sequence, and typecasts it into
+    ///a unsigned 32 bit integer.
     pub fn get_temperature_bits(&self) -> u32 {
         let mut t: u32 =  ((self.bytes[3] & 0x0F) as u32) << 16;
         t |= (self.bytes[4] as u32) << 8;
@@ -98,12 +106,15 @@ impl SensorData {
         return t;
     }
 
+    ///Uses the sensor's data-sheet formula for relative humidity %.
     pub fn calculate_humidity(&self) -> f32 {
         let mut h: f32 = ((self.get_humidity_bits()) as f32) / AHT20_DIVISOR;
         h *= 100.0;
         return h;
     }
 
+
+    ///Uses the sensor's data-sheet formula for temperature in C.
     pub fn calculate_temperature(&self) -> f32 {
         let mut t: f32 = ((self.get_temperature_bits() as f32)) / AHT20_DIVISOR;
         t *= 200.0;
