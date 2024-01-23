@@ -9,6 +9,8 @@
 const INITAL_CRC_VAL: u8 = 0xFF;
 pub const CRC_INDEX: usize = 6;
 
+const AHT20_DIVISOR: f32 = 1048576.0; 
+
 /*
  * CRC8-MAXIM
  * Lookup table for the CRC8 values. This vastly improves the speed of the 
@@ -82,6 +84,33 @@ impl SensorData {
         }
     }
 
+    pub fn get_humidity_bits(&self) -> u32 {
+        let mut h: u32 = (self.bytes[1] as u32) << 12;
+        h |= (self.bytes[2] as u32) << 4;
+        h |= (self.bytes[3] as u32) >> 4;
+        return h
+    }
+
+    pub fn get_temperature_bits(&self) -> u32 {
+        let mut t: u32 =  ((self.bytes[3] & 0x0F) as u32) << 16;
+        t |= (self.bytes[4] as u32) << 8;
+        t |= self.bytes[5] as u32;
+        return t;
+    }
+
+    pub fn calculate_humidity(&self) -> f32 {
+        let mut h: f32 = ((self.get_humidity_bits()) as f32) / AHT20_DIVISOR;
+        h *= 100.0;
+        return h;
+    }
+
+    pub fn calculate_temperature(&self) -> f32 {
+        let mut t: f32 = ((self.get_temperature_bits() as f32)) / AHT20_DIVISOR;
+        t *= 200.0;
+        t -= 50.0;
+        return t;
+    }
+
 }
 
 #[cfg(test)]
@@ -149,5 +178,38 @@ mod sensor_data_tests {
             assert_eq!(*v, 0x00 as u8);
         }
     }
-}
 
+    #[test]
+    fn split_data() {
+        let mut sd = SensorData::new();
+        sd.bytes = [0x18, 0x7E, 0x51, 0x65, 0xD4, 0xA0, 0xDA];
+
+        let h = sd.get_humidity_bits();
+        //This is the first 20bits after the state byte
+        assert_eq!(h, 517398);
+
+
+        let t = sd.get_temperature_bits();
+        assert_eq!(t, 382112);
+    }
+
+    #[test]
+    fn calulate_humidity() {
+        let mut sd = SensorData::new();
+        sd.bytes = [0x18, 0x7E, 0x51, 0x65, 0xD4, 0xA0, 0xDA];
+        
+        let h = sd.calculate_humidity();
+        assert!(h < 49.35);
+        assert!(h > 49.34);
+    }
+
+    #[test]
+    fn calculate_temperature() {
+        let mut sd = SensorData::new();
+        sd.bytes = [0x18, 0x7E, 0x51, 0x65, 0xD4, 0xA0, 0xDA];
+        
+        let t = sd.calculate_temperature();
+        assert!(t < 22.89);
+        assert!(t > 22.87);
+    }
+}
