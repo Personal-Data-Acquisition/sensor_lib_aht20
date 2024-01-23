@@ -13,7 +13,7 @@
 //! ['stm32_aht20_demo'](https://github.com/jake-g00dwin/aht20_rust_demo)
 //!
 //!
-//!```rust
+//!```rust,ignore
 //!use sensor_lib_aht20 as aht20;
 //!
 //!
