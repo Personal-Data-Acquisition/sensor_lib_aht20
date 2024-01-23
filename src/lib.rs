@@ -10,7 +10,51 @@
 //! - No assumption of reliable hardware(passes back error messages) 
 //!
 //! To see a full example running on real hardware checkout:
-//! ['stm32_aht20_demo']: <https://github.com/Personal-Data-Acquisition/sensor_lib_aht20>
+//! ['stm32_aht20_demo'](https://github.com/jake-g00dwin/aht20_rust_demo)
+//!
+//!
+//!```rust
+//!use sensor_lib_aht20 as aht20;
+//!
+//!
+//!#[entry]
+//!fn main() -> ! {
+//!    init_heap();
+//!    rtt_init_print!();
+//!
+//!    //These lines are only for arm cortex_m uC 
+//!    let cp = cortex_m::Peripherals::take().unwrap();
+//!    let dp = pac::Peripherals::take().unwrap();
+//!     
+//!     /*--SNIP--*/
+//!
+//!    let mut sensor_instance = aht20::Sensor::new(i2c, aht20::SENSOR_ADDR);
+//!
+//!    let mut inited_sensor = sensor_instance.init(&mut delay).unwrap();
+//!
+//!    //Get sensor_data --> `sd`
+//!    let mut sd = inited_sensor.read_sensor(&mut delay).unwrap();
+//!     
+//!    //Check the CRC8 value for a single measurement.
+//!    if sd.is_crc_good() {
+//!        rprintln!("CRC valid!");
+//!    } else {
+//!        rprintln!("CRC invalid!");
+//!    }
+//!
+//!    //Continuously print out the measurements using RTT.
+//!    loop {
+//!         rprintln!("Humidity: {}, Temp(C): {}", 
+//!         sd.calculate_humidity(), 
+//!         sd.calculate_temperature()
+//!         );
+//!         delay.delay_ms(1000 as u16);
+//!         sd = inited_sensor.read_sensor(&mut delay).unwrap();
+//!    }
+//!}
+//!```
+//! The above example leaves out the actual configuration of the i2c peripheral
+//! as it's more of a uC/platform specific item.
 //!
 
 #![cfg_attr(not(test), no_std)]
@@ -25,12 +69,10 @@ use embedded_hal::blocking::{
     delay::DelayMs,
 };
 
-//Import the module with the Sensor status functions/struct
 mod sensor_status;
 #[allow(unused_imports)]
 pub use crate::sensor_status::SensorStatus;
 
-//Import the sensor's available i2c commands and variables
 mod commands;
 pub use crate::commands::Command;
 
