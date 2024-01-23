@@ -1,12 +1,12 @@
-//Bits and their meanings Check the datasheet for version 1.1
-//URL: www.aosong.com
-/*
- * bit[7]: Busy
- * bit[6:5]: 00: NOR mode, 01: CYC mode, 1x: CMD mode 
- * bit[4]: Reserved
- * bit[3]: CAL Enable
- * bit[2:0]: Reserved
-*/
+//!Bits and their meanings Check the datasheet for version 1.1
+//!URL: www.aosong.com
+//!
+//! * bit[7]: Busy
+//! * bit[6:5]: 00: NOR mode, 01: CYC mode, 1x: CMD mode 
+//! * bit[4]: Reserved
+//! * bit[3]: CAL Enable
+//! * bit[2:0]: Reserved
+//!
 
 const BUSY_VALUE: u8 = 128;
 const NORMODE_VALUE: u8 = 0;
@@ -21,6 +21,9 @@ pub const CMDMODE_BM: u8 = 1<<6;
 pub const CALENABLED_BM: u8 = 1<<3;
 
 #[allow(dead_code)]
+/// The Sensor status struct is a wraper around a u8(unsigned 8 bit integer).
+/// It abstracts the needed bitwise operations into methods that can simply 
+/// return a boolean.
 pub struct SensorStatus {
     pub status: u8,
 }
